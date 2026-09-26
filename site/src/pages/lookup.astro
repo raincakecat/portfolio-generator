@@ -1,0 +1,56 @@
+---
+// Landing page: username lookup app
+---
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="description" content="Enter any GitHub username and instantly get a portfolio site built from their public repos." />
+    <title>Portfolio Profiles</title>
+  </head>
+  <body>
+    <main class="hero">
+      <h1><span class="accent">auto</span>portfolio</h1>
+      <p class="sub">Enter a GitHub username to build a portfolio from their public repositories.</p>
+      <form id="go">
+        <input id="user" placeholder="github username" autocomplete="off" spellcheck="false" maxlength="39" required />
+        <button type="submit">Generate →</button>
+      </form>
+      <p id="err" class="err hidden"></p>
+      <p class="foot">Live lookups require the local server. <a href="/">View the generated portfolio</a></p>
+    </main>
+  </body>
+</html>
+
+<style>
+  :root { color-scheme: dark; }
+  body { margin: 0; background: #0d0d0d; color: #eee; font-family: system-ui, sans-serif; min-height: 100vh; display: grid; place-items: center; }
+  .hero { text-align: center; padding: 1rem; max-width: 560px; }
+  h1 { font-size: 2.6rem; margin: 0; letter-spacing: -0.03em; }
+  .accent { color: #2ecc71; }
+  .sub { color: #9a9a9a; margin: 0.6rem 0 2rem; }
+  form { display: flex; gap: 0.5rem; }
+  input { flex: 1; background: #161616; border: 1px solid #2e2e2e; color: #eee; padding: 0.7rem 1rem; border-radius: 10px 0 0 10px; font-size: 1rem; outline: none; }
+  input:focus { border-color: #2ecc71; }
+  button { background: #2ecc71; border: none; color: #0d0d0d; font-weight: 600; padding: 0.7rem 1.2rem; border-radius: 0 10px 10px 0; cursor: pointer; font-size: 1rem; }
+  button:hover { background: #2bdc7a; }
+  .err { color: #e74c3c; }
+  .hidden { display: none; }
+  .foot { color: #666; font-size: 0.82rem; margin-top: 3rem; }
+  .foot a { color: #2ecc71; }
+</style>
+
+<script>
+  const form = document.getElementById("go");
+  const input = document.getElementById("user");
+  const err = document.getElementById("err");
+  const VALID = /^[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,37}[a-zA-Z0-9])?$/;
+  form.addEventListener("submit", (e) => {
+    e.preventDefault();
+    const name = input.value.trim();
+    if (!VALID.test(name)) { err.textContent = "Not a valid GitHub username."; err.classList.remove("hidden"); return; }
+    err.classList.add("hidden");
+    location.href = "/profile/" + encodeURIComponent(name);
+  });
+</script>

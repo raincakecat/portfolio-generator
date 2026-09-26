@@ -1,0 +1,104 @@
+---
+import projectsData from "../data/projects.json";
+import ProjectCard from "../components/ProjectCard.astro";
+import LiveStats from "../components/LiveStats.astro";
+
+const projects = projectsData.projects;
+const categories = [...new Set(projects.map((p) => p.category))];
+---
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="description" content={`Projects from ${projectsData.github_user}'s public GitHub repositories.`} />
+    <title>{projectsData.github_user} | Projects</title>
+  </head>
+  <body>
+    <header class="site-header">
+      <div>
+        <h1>Projects</h1>
+        <p class="sub">Projects from {projectsData.github_user}'s public GitHub repositories.</p>
+      </div>
+      <LiveStats />
+    </header>
+
+    <div class="controls" id="controls">
+      <div class="filter-row">
+        <button class="filter-btn active" data-filter="all">All</button>
+        {categories.map((c) => <button class="filter-btn" data-filter={c}>{c}s</button>)}
+      </div>
+      <label class="toggle">
+        <input type="checkbox" id="active-only" />
+        Active only
+      </label>
+    </div>
+
+    <main class="grid" id="grid">
+      {projects.map((p) => <ProjectCard project={p} demphasized={p.status === "archived"} />)}
+    </main>
+    <p id="empty" class="empty hidden">No projects match these filters.</p>
+
+    <footer>
+      <p>Updated {new Date(projectsData.generated_at).toISOString().slice(0, 10)} · <a href={`https://github.com/${projectsData.github_user}`} target="_blank" rel="noopener noreferrer">GitHub</a></p>
+    </footer>
+  </body>
+</html>
+
+<style is:global>
+  :root { color-scheme: dark; }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: #0d0d0d; color: #eee; font-family: system-ui, -apple-system, "Segoe UI", sans-serif; max-width: 1100px; margin: 0 auto; padding: 2rem 1.25rem 4rem; }
+  .site-header { display: flex; justify-content: space-between; align-items: flex-end; flex-wrap: wrap; gap: 1rem; margin-bottom: 2rem; }
+  h1 { margin: 0; font-size: 2.2rem; letter-spacing: -0.02em; }
+  .sub { margin: 0.25rem 0 0; color: #9a9a9a; }
+  .controls { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1rem; margin-bottom: 1.5rem; }
+  .filter-row { display: flex; flex-wrap: wrap; gap: 0.4rem; }
+  .filter-btn { background: #1a1a1a; color: #ccc; border: 1px solid #2e2e2e; padding: 0.35rem 0.85rem; border-radius: 999px; cursor: pointer; font-size: 0.8rem; }
+  .filter-btn:hover { border-color: #555; }
+  .filter-btn.active { background: #eee; color: #111; border-color: #eee; }
+  .toggle { font-size: 0.8rem; color: #aaa; display: flex; align-items: center; gap: 0.4rem; cursor: pointer; }
+  .toggle input { accent-color: #2ecc71; }
+  .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 1rem; }
+  .empty { color: #888; text-align: center; padding: 3rem 0; }
+  .hidden { display: none; }
+  footer { margin-top: 3rem; color: #666; font-size: 0.8rem; }
+  footer a { color: #888; }
+</style>
+
+<script>
+  let activeFilter = "all";
+  let activeOnly = false;
+
+  const grid = document.getElementById("grid")!;
+  const empty = document.getElementById("empty")!;
+  const cards = Array.from(grid.querySelectorAll(".card"));
+
+  function apply() {
+    let visible = 0;
+    for (const card of cards) {
+      const cat = card.getAttribute("data-category");
+      const status = card.getAttribute("data-status");
+      const show =
+        (activeFilter === "all" || cat === activeFilter) &&
+        (!activeOnly || status !== "archived");
+      card.hidden = !show;
+      if (show) visible++;
+    }
+    empty.classList.toggle("hidden", visible > 0);
+  }
+
+  document.querySelectorAll<HTMLButtonElement>(".filter-btn").forEach((btn) => {
+    btn.addEventListener("click", () => {
+      activeFilter = btn.getAttribute("data-filter")!;
+      document.querySelectorAll<HTMLButtonElement>(".filter-btn").forEach((b) => b.classList.remove("active"));
+      btn.classList.add("active");
+      apply();
+    });
+  });
+
+  document.getElementById("active-only")!.addEventListener("change", (e) => {
+    activeOnly = (e.target as HTMLInputElement).checked;
+    apply();
+  });
+</script>

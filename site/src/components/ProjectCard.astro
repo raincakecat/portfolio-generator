@@ -1,0 +1,80 @@
+---
+interface Props {
+  project: {
+    slug: string;
+    name: string;
+    repo_url: string;
+    category: string;
+    tech_stack: string[];
+    description: string;
+    status: string;
+    last_commit_at: string;
+    commit_count_90d: number;
+    stars: number;
+  };
+  demphasized?: boolean;
+}
+const { project, demphasized = false } = Astro.props;
+
+const CATEGORY_COLORS: Record<string, string> = {
+  "Discord Bot": "#5865F2",
+  "Minecraft Plugin": "#44bd32",
+  "Fabric Mod": "#c0392b",
+  "Web App": "#2980b9",
+  Other: "#7f8c8d",
+};
+
+function relTime(iso: string): string {
+  const days = Math.floor((Date.now() - new Date(iso).getTime()) / 86400000);
+  if (days <= 0) return "today";
+  if (days === 1) return "yesterday";
+  if (days < 30) return `${days} days ago`;
+  const months = Math.floor(days / 30);
+  if (months < 12) return `${months} month${months > 1 ? "s" : ""} ago`;
+  const years = Math.floor(months / 12);
+  return `${years} year${years > 1 ? "s" : ""} ago`;
+}
+const color = CATEGORY_COLORS[project.category] || CATEGORY_COLORS.Other;
+const base = import.meta.env.BASE_URL.replace(/\/?$/, "/");
+---
+<article class={`card ${demphasized ? "card-muted" : ""}`} data-category={project.category} data-status={project.status}>
+  <div class="card-top">
+    <span class="tag" style={`background:${color}22;color:${color};border-color:${color}55`}>{project.category}</span>
+    {project.stars > 0 && <span class="stars">★ {project.stars}</span>}
+  </div>
+  <h2><a href={project.repo_url} target="_blank" rel="noopener">{project.name}</a></h2>
+  <p class="desc">{project.description}</p>
+  <div class="pills">
+    {project.tech_stack.map((t) => <span class="pill">{t}</span>)}
+  </div>
+  <div class="card-foot">
+    {project.status === "archived" ? (
+      <span class="status archived">archived</span>
+    ) : (
+      <span class="status active-dot">updated {relTime(project.last_commit_at)}</span>
+    )}
+    <a class="detail-link" href={`${base}project/${project.slug}/`}>details →</a>
+  </div>
+</article>
+
+<style>
+  .card { border: 1px solid #2a2a2a; border-radius: 12px; padding: 1.25rem; background: #161616; display: flex; flex-direction: column; gap: 0.6rem; transition: border-color 0.15s, transform 0.15s; }
+  .card:hover { border-color: #4a4a4a; transform: translateY(-2px); }
+  .card-muted { opacity: 0.45; }
+  .card-muted:hover { opacity: 0.9; }
+  .card-top { display: flex; justify-content: space-between; align-items: center; }
+  .tag { font-size: 0.72rem; font-weight: 600; padding: 0.2rem 0.55rem; border-radius: 999px; border: 1px solid; }
+  .stars { color: #f1c40f; font-size: 0.8rem; }
+  h2 { margin: 0; font-size: 1.15rem; }
+  h2 a { color: #fff; text-decoration: none; }
+  h2 a:hover { text-decoration: underline; }
+  .desc { margin: 0; color: #b8b8b8; font-size: 0.9rem; flex: 1; }
+  .pills { display: flex; flex-wrap: wrap; gap: 0.35rem; }
+  .pill { font-size: 0.7rem; color: #d0d0d0; background: #232323; padding: 0.18rem 0.5rem; border-radius: 6px; }
+  .card-foot { display: flex; justify-content: space-between; align-items: center; font-size: 0.78rem; }
+  .active-dot { color: #2ecc71; }
+  .archived { color: #7f8c8d; }
+  .status::before { content: "● "; font-size: 0.6rem; }
+  .detail-link { color: #8a8a8a; text-decoration: none; }
+  .detail-link:hover { color: #fff; }
+</style>

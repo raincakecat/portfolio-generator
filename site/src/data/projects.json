@@ -1,0 +1,113 @@
+{
+  "generated_at": "2026-09-26T07:42:06.954Z",
+  "github_user": "raincakecat",
+  "projects": [
+    {
+      "slug": "crystal-events-e50fa766",
+      "name": "crystal-events",
+      "repo_url": "https://github.com/raincakecat/crystal-events",
+      "category": "Minecraft Plugin",
+      "tech_stack": [
+        "Java",
+        "Paper API"
+      ],
+      "description": "Original Paper 1.21.11 / Java 21 Crystal PvP tournament plugin. Install jar/CrystalPvPEvents-1.0.0.jar.",
+      "status": "active",
+      "last_commit_at": "2026-09-26T07:31:35Z",
+      "commit_count_90d": 1,
+      "stars": 0,
+      "highlights": [],
+      "live_stats": null,
+      "manual_override": false
+    },
+    {
+      "slug": "minecraft-combat-audio-mixer-0f68bef3",
+      "name": "minecraft-combat-audio-mixer",
+      "repo_url": "https://github.com/raincakecat/minecraft-combat-audio-mixer",
+      "category": "Fabric Mod",
+      "tech_stack": [
+        "Java",
+        "Fabric API"
+      ],
+      "description": "A client-side Fabric mod for Minecraft Java that gives you live, per-group volume control over combat-relevant vanilla sounds. Eight sound groups mapped over 27 vanilla sounds, live 0-150% sliders, previews, presets, and local JSON preset sharing.",
+      "status": "active",
+      "last_commit_at": "2026-09-26T06:54:23Z",
+      "commit_count_90d": 3,
+      "stars": 0,
+      "highlights": [
+        "Eight sound groups mapped over 27 explicitly documented vanilla sound events.",
+        "Live 0-150% gain sliders per group: 100% is unchanged, 0% mutes, 150% is the ceiling. Master and category muting stay respected.",
+        "Individual per-group previews plus an overlapping combat mix preview (two explosions, a totem, food, an anchor charge, a pearl throw)."
+      ],
+      "live_stats": null,
+      "manual_override": false
+    },
+    {
+      "slug": "dev-ticket-bot-sanitize-dfb6e8b0",
+      "name": "Dev-Ticket-Bot-Sanitize",
+      "repo_url": "https://github.com/raincakecat/Dev-Ticket-Bot-Sanitize",
+      "category": "Discord Bot",
+      "tech_stack": [
+        "JavaScript",
+        "express",
+        "discord.js",
+        "Supabase"
+      ],
+      "description": "A comprehensive Discord support ticket bot designed for managing dev work customers. Features AI auto-reply, customer management, encrypted notes, pattern analysis, and more.",
+      "status": "active",
+      "last_commit_at": "2026-08-21T03:33:01Z",
+      "commit_count_90d": 2,
+      "stars": 0,
+      "highlights": [
+        "Interactive support panel with buttons",
+        "VIP priority tickets (urgent status automatically)",
+        "Scheduled Call voice channel support"
+      ],
+      "live_stats": null,
+      "manual_override": false
+    },
+    {
+      "slug": "tierlistrepo-sanitize-b257c9c7",
+      "name": "Tierlistrepo-sanitize",
+      "repo_url": "https://github.com/raincakecat/Tierlistrepo-sanitize",
+      "category": "Other",
+      "tech_stack": [
+        "JavaScript"
+      ],
+      "description": "A Discord bot for managing Minecraft PvP tier lists, testing queues, and player rankings.",
+      "status": "active",
+      "last_commit_at": "2026-08-21T02:37:44Z",
+      "commit_count_90d": 3,
+      "stars": 0,
+      "highlights": [
+        "/result — Record a tier test result with role assignment",
+        "/close [tier] — Close a test ticket and assign tier (with transcript)",
+        "/profile @user — View a player's current tiers"
+      ],
+      "live_stats": null,
+      "manual_override": false
+    },
+    {
+      "slug": "cat-tiers-tier-tagger-2b556592",
+      "name": "Cat-Tiers-Tier-Tagger",
+      "repo_url": "https://github.com/raincakecat/Cat-Tiers-Tier-Tagger",
+      "category": "Fabric Mod",
+      "tech_stack": [
+        "Java",
+        "Fabric API"
+      ],
+      "description": "A fabric mod built with Java, Fabric API.",
+      "status": "active",
+      "last_commit_at": "2026-08-16T06:18:05Z",
+      "commit_count_90d": 2,
+      "stars": 0,
+      "highlights": [
+        "Shows tier labels (HT1–LT5) with color coding on player nametags",
+        "Displays gamemode icons (Crystal, Sword, Axe, Mace, UHC, NethPot, DiaPot, Spear, SMP, DiamondSMP, Speed)",
+        "Auto-fetches data from database every 60 seconds"
+      ],
+      "live_stats": null,
+      "manual_override": false
+    }
+  ]
+}

@@ -1,0 +1,15 @@
+{
+  "name": "portfolio-generator",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Scans GitHub repos and generates a structured projects.json for a static portfolio site",
+  "scripts": {
+    "generate": "node generator/generate.js",
+    "serve": "node server.js",
+    "test": "node --test"
+  },
+  "dependencies": {
+    "@octokit/rest": "^21.0.2"
+  }
+}
