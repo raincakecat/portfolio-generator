@@ -1,0 +1,20 @@
+{
+  "name": "portfolio_generator",
+  "interface": {
+    "displayName": "Portfolio Generator"
+  },
+  "plugins": [
+    {
+      "name": "portfolio-generator",
+      "source": {
+        "source": "local",
+        "path": "./plugins/portfolio-generator"
+      },
+      "policy": {
+        "installation": "AVAILABLE",
+        "authentication": "ON_INSTALL"
+      },
+      "category": "Productivity"
+    }
+  ]
+}

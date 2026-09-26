@@ -5,7 +5,6 @@ import LiveStats from "../components/LiveStats.astro";
 
 const projects = projectsData.projects;
 const categories = [...new Set(projects.map((p) => p.category))];
-const lookupUrl = import.meta.env.PUBLIC_LOOKUP_URL || "";
 ---
 <!doctype html>
 <html lang="en">
@@ -23,8 +22,6 @@ const lookupUrl = import.meta.env.PUBLIC_LOOKUP_URL || "";
       </div>
       <LiveStats />
     </header>
-
-    {lookupUrl && <p class="lookup-link"><a href={lookupUrl}>Build a portfolio from another GitHub account →</a></p>}
 
     <div class="controls" id="controls">
       <div class="filter-row">
@@ -55,9 +52,6 @@ const lookupUrl = import.meta.env.PUBLIC_LOOKUP_URL || "";
   .site-header { display: flex; justify-content: space-between; align-items: flex-end; flex-wrap: wrap; gap: 1rem; margin-bottom: 2rem; }
   h1 { margin: 0; font-size: 2.2rem; letter-spacing: -0.02em; }
   .sub { margin: 0.25rem 0 0; color: #9a9a9a; }
-  .lookup-link { margin: -0.75rem 0 1.5rem; }
-  .lookup-link a { color: #2ecc71; text-decoration: none; }
-  .lookup-link a:hover { text-decoration: underline; }
   .controls { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1rem; margin-bottom: 1.5rem; }
   .filter-row { display: flex; flex-wrap: wrap; gap: 0.4rem; }
   .filter-btn { background: #1a1a1a; color: #ccc; border: 1px solid #2e2e2e; padding: 0.35rem 0.85rem; border-radius: 999px; cursor: pointer; font-size: 0.8rem; }

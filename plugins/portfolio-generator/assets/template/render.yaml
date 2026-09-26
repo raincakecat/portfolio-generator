@@ -1,0 +1,17 @@
+services:
+  - type: web
+    name: portfolio-generator-live
+    runtime: node
+    plan: free
+    buildCommand: npm ci && npm ci --prefix site && npm run generate && npm run build --prefix site
+    startCommand: npm run serve
+    healthCheckPath: /health
+    envVars:
+      - key: NODE_VERSION
+        value: 22.12.0
+      - key: HOST
+        value: 0.0.0.0
+      - key: PUBLIC_LOOKUP_URL
+        value: /lookup
+      - key: GITHUB_TOKEN
+        sync: false

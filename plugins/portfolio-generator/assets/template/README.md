@@ -77,10 +77,7 @@ Manual overrides are applied after generation. Example:
 
 Run `npm test` for generator checks, `cd site && npm run build` for the static build, and `npm audit --omit=dev` in both directories to check installed dependencies.
 
-## Codex plugin
-
-`plugins/portfolio-generator/` is an installable Codex plugin with a reusable project template and a `create-portfolio` skill. `.agents/plugins/marketplace.json` makes it discoverable as a repository marketplace. After cloning the repository, run `codex plugin marketplace add .` from its root, then `codex plugin add portfolio-generator@portfolio_generator`. The plugin copies its template into a new project, configures a GitHub username, and runs generation and build checks.
-
 ## License
 
 MIT. See `LICENSE`.
+

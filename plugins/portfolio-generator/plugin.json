@@ -1,0 +1,21 @@
+{
+  "$schema": "https://agent-plugins.org/schemas/1.0.0/plugin.schema.json",
+  "name": "portfolio-generator",
+  "version": "0.1.0",
+  "description": "Create a GitHub-powered portfolio site from a reusable template.",
+  "author": { "name": "raincakecat" },
+  "license": "MIT",
+  "extensions": {
+    "com.openai": {
+      "interface": {
+        "displayName": "Portfolio Generator",
+        "shortDescription": "Build a portfolio from GitHub repositories.",
+        "longDescription": "Create, customize, test, and prepare a GitHub-powered project portfolio for publishing.",
+        "developerName": "raincakecat",
+        "category": "Productivity",
+        "capabilities": ["Read", "Write"],
+        "defaultPrompt": "Create a portfolio site from my public GitHub repositories."
+      }
+    }
+  }
+}

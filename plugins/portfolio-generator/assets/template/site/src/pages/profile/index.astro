@@ -1,0 +1,161 @@
+---
+// Dynamic profile shell: reads the username from the URL, fetches /api/profile,
+// and builds the card grid with DOM APIs (textContent only - never innerHTML, audit section 6).
+---
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Portfolio</title>
+  </head>
+  <body>
+    <header>
+      <a class="back" href="/lookup">← auto<span class="accent">portfolio</span></a>
+    </header>
+    <main>
+      <div class="title">
+        <h1 id="name">Loading profile…</h1>
+        <p id="meta" class="meta"></p>
+      </div>
+      <div id="grid" class="grid"></div>
+      <p id="empty" class="empty hidden">No public repos found for this account.</p>
+      <p id="error" class="err hidden"></p>
+      <div class="more-wrap">
+        <button id="more" class="hidden">Load more</button>
+      </div>
+    </main>
+  </body>
+</html>
+
+<style>
+  :root { color-scheme: dark; }
+  body { margin: 0; background: #0d0d0d; color: #eee; font-family: system-ui, sans-serif; max-width: 1100px; margin: 0 auto; padding: 1.5rem 1.25rem 4rem; }
+  .back { color: #888; text-decoration: none; font-size: 0.9rem; }
+  .accent { color: #2ecc71; }
+  h1 { margin: 1rem 0 0.2rem; font-size: 2rem; letter-spacing: -0.02em; }
+  .meta { margin: 0 0 1.5rem; color: #9a9a9a; font-size: 0.85rem; }
+  .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 1rem; }
+  .empty, .err { color: #888; text-align: center; padding: 3rem 0; }
+  .err { color: #e74c3c; }
+  .hidden { display: none; }
+  .more-wrap { text-align: center; margin-top: 1.5rem; }
+  #more { background: #1a1a1a; color: #eee; border: 1px solid #2e2e2e; padding: 0.6rem 1.4rem; border-radius: 999px; cursor: pointer; font-size: 0.9rem; }
+  #more:hover { border-color: #2ecc71; }
+  .card { border: 1px solid #2a2a2a; border-radius: 12px; padding: 1.25rem; background: #161616; display: flex; flex-direction: column; gap: 0.6rem; }
+  .card.archived { opacity: 0.45; }
+  .card-top { display: flex; justify-content: space-between; }
+  .tag { font-size: 0.72rem; font-weight: 600; padding: 0.2rem 0.55rem; border-radius: 999px; border: 1px solid; }
+  .stars { color: #f1c40f; font-size: 0.8rem; }
+  .card h2 { margin: 0; font-size: 1.15rem; }
+  .card h2 a { color: #fff; text-decoration: none; }
+  .card h2 a:hover { text-decoration: underline; }
+  .desc { margin: 0; color: #b8b8b8; font-size: 0.9rem; flex: 1; }
+  .pills { display: flex; flex-wrap: wrap; gap: 0.35rem; }
+  .pill { font-size: 0.7rem; color: #d0d0d0; background: #232323; padding: 0.18rem 0.5rem; border-radius: 6px; }
+  .card-foot { display: flex; justify-content: space-between; font-size: 0.78rem; }
+  .active { color: #2ecc71; }
+  .archived-tag { color: #7f8c8d; }
+</style>
+
+<script>
+  const CATEGORY_COLORS = {
+    "Discord Bot": "#5865F2",
+    "Minecraft Plugin": "#44bd32",
+    "Fabric Mod": "#c0392b",
+    "Web App": "#2980b9",
+    Other: "#7f8c8d",
+  };
+  const VALID = /^[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,37}[a-zA-Z0-9])?$/;
+
+  // The username comes from the URL path - treat it as untrusted input.
+  let username = "";
+  try { username = decodeURIComponent(location.pathname.split("/").filter(Boolean).pop() || ""); }
+  catch { location.replace("/lookup"); }
+  if (!VALID.test(username)) { location.replace("/lookup"); }
+
+  const grid = document.getElementById("grid");
+  const empty = document.getElementById("empty");
+  const errorBox = document.getElementById("error");
+  const moreBtn = document.getElementById("more");
+  let offset = 0;
+  let loading = false;
+
+  function relTime(iso) {
+    const days = Math.floor((Date.now() - new Date(iso).getTime()) / 86400000);
+    if (days <= 0) return "today";
+    if (days === 1) return "yesterday";
+    if (days < 30) return days + " days ago";
+    const m = Math.floor(days / 30);
+    if (m < 12) return m + " month" + (m > 1 ? "s" : "") + " ago";
+    return Math.floor(m / 12) + " year(s) ago";
+  }
+
+  // All repo content is inserted via textContent/createElement only - never innerHTML.
+  function card(p) {
+    const el = document.createElement("article");
+    el.className = "card" + (p.status === "archived" ? " archived" : "");
+
+    const top = document.createElement("div"); top.className = "card-top";
+    const tag = document.createElement("span"); tag.className = "tag";
+    const color = CATEGORY_COLORS[p.category] || CATEGORY_COLORS.Other;
+    tag.textContent = p.category;
+    tag.style.cssText = "background:" + color + "22;color:" + color + ";border-color:" + color + "55";
+    top.appendChild(tag);
+    if (p.stars > 0) { const s = document.createElement("span"); s.className = "stars"; s.textContent = "★ " + p.stars; top.appendChild(s); }
+
+    const h2 = document.createElement("h2");
+    const a = document.createElement("a"); a.href = p.repo_url; a.target = "_blank"; a.rel = "noopener noreferrer"; a.textContent = p.name;
+    h2.appendChild(a);
+
+    const desc = document.createElement("p"); desc.className = "desc"; desc.textContent = p.description;
+
+    const pills = document.createElement("div"); pills.className = "pills";
+    for (const t of p.tech_stack) { const s = document.createElement("span"); s.className = "pill"; s.textContent = t; pills.appendChild(s); }
+
+    const foot = document.createElement("div"); foot.className = "card-foot";
+    const st = document.createElement("span");
+    if (p.status === "archived") { st.className = "archived-tag"; st.textContent = "archived"; }
+    else { st.className = "active"; st.textContent = "updated " + relTime(p.last_commit_at); }
+    foot.appendChild(st);
+
+    el.append(top, h2, desc, pills, foot);
+    return el;
+  }
+
+  async function load() {
+    if (loading) return;
+    loading = true;
+    moreButtonDisabled(true);
+    try {
+      const res = await fetch(`/api/profile?user=${encodeURIComponent(username)}&offset=${offset}`);
+      if (res.status === 404) { errorBox.textContent = "This GitHub account has no public activity."; errorBox.classList.remove("hidden"); hideLoading(); loading = false; return; }
+      if (res.status === 429) { errorBox.textContent = "Rate limited - try again in a little while."; errorBox.classList.remove("hidden"); hideLoading(); loading = false; return; }
+      if (!res.ok) { errorBox.textContent = "Something went wrong - try again later."; errorBox.classList.remove("hidden"); hideLoading(); loading = false; return; }
+      const data = await res.json();
+      errorBox.classList.add("hidden");
+      document.title = data.username + " | portfolio";
+      document.getElementById("name").textContent = data.username;
+      document.getElementById("meta").textContent = grid.children.length + data.shown + " of " + data.total_repos + " public repos · generated " + relTime(data.generated_at);
+      for (const p of data.projects) grid.appendChild(card(p));
+      empty.classList.toggle("hidden", data.total_repos > 0);
+      moreBtn.classList.toggle("hidden", !data.has_more);
+      if (data.has_more && data.next_offset !== null) {
+        offset = data.next_offset;
+        moreBtn.classList.remove("hidden");
+      }
+    } catch {
+      errorBox.textContent = "Network error - try again.";
+      errorBox.classList.remove("hidden");
+    }
+    hideLoading();
+    moreButtonDisabled(false);
+    loading = false;
+  }
+
+  function hideLoading() { /* placeholder for a spinner removal */ }
+  function moreButtonDisabled(v) { moreBtn.disabled = v; moreBtn.textContent = v ? "Loading…" : "Load more"; }
+
+  document.getElementById("more").addEventListener("click", load);
+  load();
+</script>

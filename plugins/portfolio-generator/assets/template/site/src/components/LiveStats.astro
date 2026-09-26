@@ -1,0 +1,39 @@
+---
+// Optional live bot stats widget; no output until configured.
+// Wire up later by setting LIVE_STATS_URL (e.g. your Bot Fleet Dashboard API).
+// If nothing is configured this component renders nothing, gracefully.
+interface Props {
+  url?: string;
+}
+const { url = import.meta.env.LIVE_STATS_URL } = Astro.props;
+---
+{url && (
+  <div id="live-stats" data-url={url}>
+    <span class="pulse"></span>
+    <span id="live-stats-text">Checking bot status…</span>
+  </div>
+)}
+{!url && null}
+
+<style>
+  #live-stats { display: inline-flex; align-items: center; gap: 0.5rem; font-size: 0.85rem; color: #2ecc71; border: 1px solid #22522e; background: #102410; padding: 0.35rem 0.8rem; border-radius: 999px; }
+  .pulse { width: 8px; height: 8px; border-radius: 50%; background: #2ecc71; animation: pulse 1.5s infinite; }
+  @keyframes pulse { 0% { opacity: 1; } 50% { opacity: 0.3; } 100% { opacity: 1; } }
+</style>
+
+<script>
+  const el = document.getElementById("live-stats");
+  if (el) {
+    const url = el.getAttribute("data-url");
+    fetch(url)
+      .then((r) => r.json())
+      .then((d) => {
+        const text = document.getElementById("live-stats-text");
+        if (text) text.textContent = `Bots online: ${d.online}/${d.total}`;
+      })
+      .catch(() => {
+        // graceful degrade: hide entirely, never show an error to a visitor
+        el.remove();
+      });
+  }
+</script>
