@@ -38,7 +38,7 @@ Open `http://127.0.0.1:8080/lookup` to look up another public GitHub user. The l
 
 The Blueprint uses Render's Free plan. A Free service can sleep after inactivity, so its first request after a quiet period can be slow. Its cache and rate counters are in memory and reset when the service restarts. For steady traffic, use a paid service and a persistent rate-limit store.
 
-The Render-hosted homepage links to its own `/lookup` automatically. GitHub Pages also offers a basic public lookup directly in the browser, using GitHub's unauthenticated API. It shows repository metadata and descriptions without README or commit analysis, and visitors share GitHub's 60 requests-per-hour limit with other unauthenticated requests from their IP. If you prefer the richer Render lookup, set a GitHub Actions repository variable named `PUBLIC_LOOKUP_URL` to the full Render lookup URL, such as `https://your-service.onrender.com/lookup`, and run the workflow again.
+The Render-hosted homepage links to its own `/lookup` automatically. GitHub Pages also offers a public lookup directly in the browser. It uses the generated summaries for the configured account and reads public READMEs when another repository lacks a useful description. If neither supplies one, it says so rather than inventing a generic description. Browser visitors share GitHub's unauthenticated 60 requests-per-hour limit with other requests from their IP. If you prefer the richer Render lookup, set a GitHub Actions repository variable named `PUBLIC_LOOKUP_URL` to the full Render lookup URL, such as `https://your-service.onrender.com/lookup`, and run the workflow again.
 
 ## Publish with GitHub Pages
 
@@ -57,7 +57,7 @@ GitHub Actions provides `GITHUB_TOKEN` automatically. No personal access token i
 
 ## Data and descriptions
 
-The generator reads repository metadata, file trees, README files, common dependency manifests, and recent commits. For substantial READMEs it extracts an introduction; otherwise it writes a short rule-based description. It does not call an AI service. `generator/summary-cache.json` stores descriptions locally and is ignored by Git.
+The generator reads repository metadata, file trees, README files, common dependency manifests, and recent commits. It extracts a useful README introduction even from short READMEs, uses a repository description when no useful introduction exists, and falls back to a rule-based description only when neither is available. It does not call an AI service. `generator/summary-cache.json` stores descriptions locally and is ignored by Git.
 
 Manual overrides are applied after generation. Example:
 

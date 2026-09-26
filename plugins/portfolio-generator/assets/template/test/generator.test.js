@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { ProfileEngine, extractIntro, slugify } from "../generator/lib.js";
+import { ProfileEngine, extractIntro, refineCategoryFromReadme, slugify } from "../generator/lib.js";
+import { categoryFor, fetchReadmeIntro, usefulDescription } from "../site/src/lib/browser-profile.js";
 
 test("repository slugs remain unique across GitHub punctuation", () => {
   const names = ["foo-bar", "foo.bar", "foo_bar"];
@@ -17,6 +18,18 @@ test("README introduction keeps version numbers and excludes list items", () => 
   );
   assert.match(intro, /1\.21\.11/);
   assert.doesNotMatch(intro, /Install the first/);
+});
+
+test("short READMEs identify a project's purpose and category", async () => {
+  const markdown = "# Cat Tiers Tagger\n\nA Fabric mod that displays player combat tiers and gamemode icons on nametags in Minecraft.\n\n## Install\nCopy the JAR into your mods folder.";
+  const repo = { owner: { login: "raincakecat" }, name: "Cat-Tiers-Tier-Tagger", topics: [] };
+  const request = async () => ({ ok: true, json: async () => ({ encoding: "base64", content: Buffer.from(markdown).toString("base64") }) });
+  const description = await fetchReadmeIntro(repo, request);
+  assert.match(description, /displays player combat tiers/);
+  assert.equal(categoryFor(repo, description), "Fabric Mod");
+  assert.equal(refineCategoryFromReadme("Other", markdown), "Fabric Mod");
+  assert.equal(usefulDescription("A Java project."), false);
+  assert.equal(usefulDescription(description), true);
 });
 
 test("profile cache normalizes username and keeps filter choices separate", async () => {

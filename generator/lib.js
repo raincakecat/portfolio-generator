@@ -4,7 +4,6 @@ import { Octokit } from "@octokit/rest";
 const ACTIVE_DAYS = 60;
 const MAINTAINED_DAYS = 365;
 const COMMIT_WINDOW_DAYS = 90;
-const README_MIN_WORDS = 300;
 
 // Hard limits that bound the work per request (DoS guardrails, audit section 21)
 export const LIMITS = {
@@ -97,6 +96,16 @@ export function detectCategory(treeEntries, pkgJson, language) {
     if (deps["next"] || deps["react"]) return "Web App";
   }
   return "Other";
+}
+
+export function refineCategoryFromReadme(category, readme) {
+  if (category !== "Other") return category;
+  const intro = readme.slice(0, 2000).toLowerCase();
+  if (/fabric(?:\s|-)?mod|fabric api/.test(intro)) return "Fabric Mod";
+  if (/minecraft(?:\s|-)?plugin|paper(?:\s|-)?plugin|spigot/.test(intro)) return "Minecraft Plugin";
+  if (/discord(?:\s|-)?bot|discord\.js/.test(intro)) return "Discord Bot";
+  if (/web(?:\s|-)?app|website/.test(intro)) return "Web App";
+  return category;
 }
 
 export function extractTechStack(treeEntries, pkgJson, fileContents, language) {
@@ -229,7 +238,7 @@ export class ProfileEngine {
       if (raw !== null) fileContents[fname] = raw;
     }));
 
-    const category = detectCategory(treeEntries, pkgJson, repo.language);
+    const category = refineCategoryFromReadme(detectCategory(treeEntries, pkgJson, repo.language), readme);
     const techStack = extractTechStack(treeEntries, pkgJson, fileContents, repo.language);
 
     let commitCount90 = 0;
@@ -243,13 +252,16 @@ export class ProfileEngine {
       if (commits.length) lastCommitAt = commits[0].commit.author.date;
     } catch { /* non-fatal */ }
 
-    const descriptionKey = hashContent(["description-v4", repo.full_name || `${owner}/${name}`, readme, treeEntries.join("\n"), JSON.stringify(fileContents)]);
+    const descriptionKey = hashContent(["description-v5", repo.full_name || `${owner}/${name}`, readme, treeEntries.join("\n"), JSON.stringify(fileContents)]);
+    const intro = readme ? extractIntro(readme) : "";
     let description;
     const cached = this.summaryCache.get(descriptionKey);
     if (cached && Date.now() - cached.at < this.cacheTtlMs) {
       description = cached.description;
-    } else if (readme && wordCount(readme) > README_MIN_WORDS) {
-      description = extractIntro(readme);
+    } else if (wordCount(intro) >= 8) {
+      description = intro;
+    } else if (repo.description && wordCount(repo.description) >= 8) {
+      description = repo.description.trim();
     } else {
       description = fallbackDescription(repo, category, techStack);
     }

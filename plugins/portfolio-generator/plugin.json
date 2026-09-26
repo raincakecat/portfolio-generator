@@ -1,7 +1,7 @@
 {
   "$schema": "https://agent-plugins.org/schemas/1.0.0/plugin.schema.json",
   "name": "portfolio-generator",
-  "version": "0.1.0+codex.20260926081314",
+  "version": "0.1.0+codex.20260926151139",
   "description": "Create a GitHub-powered portfolio site from a reusable template.",
   "author": { "name": "raincakecat" },
   "license": "MIT",

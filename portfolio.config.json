@@ -2,5 +2,12 @@
   "github_user": "raincakecat",
   "include": [],
   "exclude": [],
-  "manual_overrides": {}
+  "manual_overrides": {
+    "portfolio-generator": {
+      "description": "Builds a project portfolio from public GitHub repositories, with an Astro site, a Codex plugin template, and live username lookup."
+    },
+    "crystal-events": {
+      "description": "A Paper plugin for Minecraft Crystal PvP tournaments, with configurable arenas, kits, a gulag, host commands, preflight checks, and reset tools."
+    }
+  }
 }

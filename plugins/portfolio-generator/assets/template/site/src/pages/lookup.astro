@@ -19,7 +19,7 @@ const staticLookup = import.meta.env.PUBLIC_PROFILE_SOURCE === "github";
         <button type="submit">Generate →</button>
       </form>
       <p id="err" class="err hidden"></p>
-      <p class="foot">{staticLookup ? "Public GitHub data · basic repository details" : "Live GitHub data"} · <a href={base}>View the generated portfolio</a></p>
+      <p class="foot">{staticLookup ? "Public GitHub data · README descriptions when available" : "Live GitHub data"} · <a href={base}>View the generated portfolio</a></p>
     </main>
   </body>
 </html>

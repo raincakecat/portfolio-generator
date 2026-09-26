@@ -1,7 +1,27 @@
 {
-  "generated_at": "2026-09-26T07:42:06.954Z",
+  "generated_at": "2026-09-26T15:12:29.160Z",
   "github_user": "raincakecat",
   "projects": [
+    {
+      "slug": "portfolio-generator-1211d3dd",
+      "name": "portfolio-generator",
+      "repo_url": "https://github.com/raincakecat/portfolio-generator",
+      "category": "Other",
+      "tech_stack": [
+        "Astro"
+      ],
+      "description": "Builds a project portfolio from public GitHub repositories, with an Astro site, a Codex plugin template, and live username lookup.",
+      "status": "active",
+      "last_commit_at": "2026-09-26T08:13:31Z",
+      "commit_count_90d": 4,
+      "stars": 0,
+      "highlights": [
+        "Node.js 22.12 or newer",
+        "A GitHub account with public repositories"
+      ],
+      "live_stats": null,
+      "manual_override": true
+    },
     {
       "slug": "crystal-events-e50fa766",
       "name": "crystal-events",
@@ -11,14 +31,14 @@
         "Java",
         "Paper API"
       ],
-      "description": "Original Paper 1.21.11 / Java 21 Crystal PvP tournament plugin. Install jar/CrystalPvPEvents-1.0.0.jar.",
+      "description": "A Paper plugin for Minecraft Crystal PvP tournaments, with configurable arenas, kits, a gulag, host commands, preflight checks, and reset tools.",
       "status": "active",
-      "last_commit_at": "2026-09-26T07:31:35Z",
-      "commit_count_90d": 1,
+      "last_commit_at": "2026-09-26T08:06:16Z",
+      "commit_count_90d": 2,
       "stars": 0,
       "highlights": [],
       "live_stats": null,
-      "manual_override": false
+      "manual_override": true
     },
     {
       "slug": "minecraft-combat-audio-mixer-0f68bef3",
@@ -70,7 +90,7 @@
       "slug": "tierlistrepo-sanitize-b257c9c7",
       "name": "Tierlistrepo-sanitize",
       "repo_url": "https://github.com/raincakecat/Tierlistrepo-sanitize",
-      "category": "Other",
+      "category": "Discord Bot",
       "tech_stack": [
         "JavaScript"
       ],
@@ -96,7 +116,7 @@
         "Java",
         "Fabric API"
       ],
-      "description": "A fabric mod built with Java, Fabric API.",
+      "description": "A Fabric mod that displays player combat tiers and gamemode icons on nametags in Minecraft. Fully open source.",
       "status": "active",
       "last_commit_at": "2026-08-16T06:18:05Z",
       "commit_count_90d": 2,

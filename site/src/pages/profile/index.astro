@@ -1,4 +1,5 @@
 ---
+import projectsData from "../../data/projects.json";
 const base = import.meta.env.BASE_URL.replace(/\/?$/, "/");
 const staticLookup = import.meta.env.PUBLIC_PROFILE_SOURCE === "github";
 ---
@@ -9,7 +10,7 @@ const staticLookup = import.meta.env.PUBLIC_PROFILE_SOURCE === "github";
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>Portfolio</title>
   </head>
-  <body data-base={base} data-static={staticLookup}>
+  <body data-base={base} data-static={staticLookup} data-built-user={projectsData.github_user}>
     <header>
       <a class="back" href={`${base}lookup/`}>← auto<span class="accent">portfolio</span></a>
     </header>
@@ -28,7 +29,7 @@ const staticLookup = import.meta.env.PUBLIC_PROFILE_SOURCE === "github";
   </body>
 </html>
 
-<style>
+<style is:global>
   :root { color-scheme: dark; }
   body { margin: 0; background: #0d0d0d; color: #eee; font-family: system-ui, sans-serif; max-width: 1100px; margin: 0 auto; padding: 1.5rem 1.25rem 4rem; }
   .back { color: #888; text-decoration: none; font-size: 0.9rem; }
@@ -59,6 +60,7 @@ const staticLookup = import.meta.env.PUBLIC_PROFILE_SOURCE === "github";
 </style>
 
 <script>
+  import { usefulDescription, categoryFor, fetchReadmeIntro } from "../../lib/browser-profile.js";
   const CATEGORY_COLORS = {
     "Discord Bot": "#5865F2",
     "Minecraft Plugin": "#44bd32",
@@ -83,6 +85,18 @@ const staticLookup = import.meta.env.PUBLIC_PROFILE_SOURCE === "github";
   let offset = 0;
   let loading = false;
   let repoPromise = null;
+  let builtPromise = null;
+
+  async function builtProjects() {
+    if (username.toLowerCase() !== (document.body.dataset.builtUser || "").toLowerCase()) return new Map();
+    try {
+      const response = await fetch(base + "portfolio-data.json");
+      if (!response.ok) return new Map();
+      const data = await response.json();
+      if (data.github_user.toLowerCase() !== username.toLowerCase()) return new Map();
+      return new Map(data.projects.map((project) => [project.name.toLowerCase(), project]));
+    } catch { return new Map(); }
+  }
 
   async function publicRepos() {
     const all = [];
@@ -103,20 +117,25 @@ const staticLookup = import.meta.env.PUBLIC_PROFILE_SOURCE === "github";
       return res.json();
     }
     repoPromise ||= publicRepos();
-    const repos = await repoPromise;
+    builtPromise ||= builtProjects();
+    const [repos, built] = await Promise.all([repoPromise, builtPromise]);
     const visible = repos.slice(offset, offset + 12);
-    const projects = visible.map((repo) => {
-      const topics = repo.topics || [];
-      const category = topics.includes("fabric") ? "Fabric Mod" : topics.includes("minecraft-plugin") ? "Minecraft Plugin" : topics.includes("discord-bot") ? "Discord Bot" : "Other";
+    const projects = await Promise.all(visible.map(async (repo) => {
+      const generated = built.get(repo.name.toLowerCase());
+      let description = usefulDescription(generated?.description) ? generated.description : "";
+      if (!description && usefulDescription(repo.description)) description = repo.description.trim();
+      if (!description) description = await fetchReadmeIntro(repo);
+      if (!description) description = "No project description is available.";
+      const category = categoryFor(repo, description, generated?.category);
       const days = (Date.now() - new Date(repo.pushed_at).getTime()) / 86400000;
       return {
         name: repo.name, repo_url: repo.html_url, category,
-        tech_stack: repo.language ? [repo.language] : [],
-        description: repo.description || `A ${repo.language || "software"} project.`,
+        tech_stack: generated?.tech_stack?.length ? generated.tech_stack : repo.language ? [repo.language] : [],
+        description,
         status: days <= 60 ? "active" : days <= 365 ? "maintained" : "archived",
         last_commit_at: repo.pushed_at, stars: repo.stargazers_count || 0,
       };
-    });
+    }));
     const next = offset + visible.length;
     return { username, total_repos: repos.length, shown: visible.length, has_more: next < repos.length, next_offset: next < repos.length ? next : null, generated_at: new Date().toISOString(), projects };
   }
