@@ -183,6 +183,7 @@ const staticLookup = import.meta.env.PUBLIC_PROFILE_SOURCE === "github";
     } catch (error) {
       errorBox.textContent = error.status === 404 ? "This GitHub account was not found." : (error.status === 403 || error.status === 429) ? "GitHub's request limit was reached. Try again later." : "Network error - try again.";
       errorBox.classList.remove("hidden");
+      if (!grid.children.length) document.getElementById("name").textContent = "Unable to load profile";
     }
     hideLoading();
     moreButtonDisabled(false);
