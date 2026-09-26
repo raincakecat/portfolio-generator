@@ -1,6 +1,6 @@
 {
   "name": "portfolio-generator",
-  "version": "0.1.0",
+  "version": "0.1.0+codex.20260926081124",
   "description": "Create a GitHub-powered portfolio site from a reusable template.",
   "author": {
     "name": "raincakecat"
@@ -12,7 +12,10 @@
     "longDescription": "Create, customize, test, and prepare a GitHub-powered project portfolio for publishing.",
     "developerName": "raincakecat",
     "category": "Productivity",
-    "capabilities": ["Read", "Write"],
+    "capabilities": [
+      "Read",
+      "Write"
+    ],
     "defaultPrompt": "Create a portfolio site from my public GitHub repositories."
   }
 }

@@ -1,6 +1,6 @@
 ---
-// Dynamic profile shell: reads the username from the URL, fetches /api/profile,
-// and builds the card grid with DOM APIs (textContent only - never innerHTML, audit section 6).
+const base = import.meta.env.BASE_URL.replace(/\/?$/, "/");
+const staticLookup = import.meta.env.PUBLIC_PROFILE_SOURCE === "github";
 ---
 <!doctype html>
 <html lang="en">
@@ -9,9 +9,9 @@
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>Portfolio</title>
   </head>
-  <body>
+  <body data-base={base} data-static={staticLookup}>
     <header>
-      <a class="back" href="/lookup">← auto<span class="accent">portfolio</span></a>
+      <a class="back" href={`${base}lookup/`}>← auto<span class="accent">portfolio</span></a>
     </header>
     <main>
       <div class="title">
@@ -67,12 +67,14 @@
     Other: "#7f8c8d",
   };
   const VALID = /^[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,37}[a-zA-Z0-9])?$/;
+  const base = document.body.dataset.base || "/";
+  const staticLookup = document.body.dataset.static === "true";
 
   // The username comes from the URL path - treat it as untrusted input.
   let username = "";
-  try { username = decodeURIComponent(location.pathname.split("/").filter(Boolean).pop() || ""); }
-  catch { location.replace("/lookup"); }
-  if (!VALID.test(username)) { location.replace("/lookup"); }
+  try { username = staticLookup ? new URLSearchParams(location.search).get("user") || "" : decodeURIComponent(location.pathname.split("/").filter(Boolean).pop() || ""); }
+  catch { location.replace(base + "lookup/"); }
+  if (!VALID.test(username)) { location.replace(base + "lookup/"); }
 
   const grid = document.getElementById("grid");
   const empty = document.getElementById("empty");
@@ -80,6 +82,44 @@
   const moreBtn = document.getElementById("more");
   let offset = 0;
   let loading = false;
+  let repoPromise = null;
+
+  async function publicRepos() {
+    const all = [];
+    for (let page = 1; page <= 3; page++) {
+      const res = await fetch(`https://api.github.com/users/${encodeURIComponent(username)}/repos?type=owner&sort=pushed&per_page=100&page=${page}`);
+      if (!res.ok) { const error = new Error("GitHub request failed"); error.status = res.status; throw error; }
+      const repos = await res.json();
+      all.push(...repos.filter((repo) => !repo.fork && !repo.private));
+      if (repos.length < 100) break;
+    }
+    return all;
+  }
+
+  async function requestProfile() {
+    if (!staticLookup) {
+      const res = await fetch(`/api/profile?user=${encodeURIComponent(username)}&offset=${offset}`);
+      if (!res.ok) { const error = new Error("Profile request failed"); error.status = res.status; throw error; }
+      return res.json();
+    }
+    repoPromise ||= publicRepos();
+    const repos = await repoPromise;
+    const visible = repos.slice(offset, offset + 12);
+    const projects = visible.map((repo) => {
+      const topics = repo.topics || [];
+      const category = topics.includes("fabric") ? "Fabric Mod" : topics.includes("minecraft-plugin") ? "Minecraft Plugin" : topics.includes("discord-bot") ? "Discord Bot" : "Other";
+      const days = (Date.now() - new Date(repo.pushed_at).getTime()) / 86400000;
+      return {
+        name: repo.name, repo_url: repo.html_url, category,
+        tech_stack: repo.language ? [repo.language] : [],
+        description: repo.description || `A ${repo.language || "software"} project.`,
+        status: days <= 60 ? "active" : days <= 365 ? "maintained" : "archived",
+        last_commit_at: repo.pushed_at, stars: repo.stargazers_count || 0,
+      };
+    });
+    const next = offset + visible.length;
+    return { username, total_repos: repos.length, shown: visible.length, has_more: next < repos.length, next_offset: next < repos.length ? next : null, generated_at: new Date().toISOString(), projects };
+  }
 
   function relTime(iso) {
     const days = Math.floor((Date.now() - new Date(iso).getTime()) / 86400000);
@@ -128,11 +168,7 @@
     loading = true;
     moreButtonDisabled(true);
     try {
-      const res = await fetch(`/api/profile?user=${encodeURIComponent(username)}&offset=${offset}`);
-      if (res.status === 404) { errorBox.textContent = "This GitHub account has no public activity."; errorBox.classList.remove("hidden"); hideLoading(); loading = false; return; }
-      if (res.status === 429) { errorBox.textContent = "Rate limited - try again in a little while."; errorBox.classList.remove("hidden"); hideLoading(); loading = false; return; }
-      if (!res.ok) { errorBox.textContent = "Something went wrong - try again later."; errorBox.classList.remove("hidden"); hideLoading(); loading = false; return; }
-      const data = await res.json();
+      const data = await requestProfile();
       errorBox.classList.add("hidden");
       document.title = data.username + " | portfolio";
       document.getElementById("name").textContent = data.username;
@@ -144,8 +180,8 @@
         offset = data.next_offset;
         moreBtn.classList.remove("hidden");
       }
-    } catch {
-      errorBox.textContent = "Network error - try again.";
+    } catch (error) {
+      errorBox.textContent = error.status === 404 ? "This GitHub account was not found." : (error.status === 403 || error.status === 429) ? "GitHub's request limit was reached. Try again later." : "Network error - try again.";
       errorBox.classList.remove("hidden");
     }
     hideLoading();

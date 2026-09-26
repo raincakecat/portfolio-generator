@@ -5,7 +5,8 @@ import LiveStats from "../components/LiveStats.astro";
 
 const projects = projectsData.projects;
 const categories = [...new Set(projects.map((p) => p.category))];
-const lookupUrl = import.meta.env.PUBLIC_LOOKUP_URL || "";
+const base = import.meta.env.BASE_URL.replace(/\/?$/, "/");
+const lookupUrl = import.meta.env.PUBLIC_LOOKUP_URL || (import.meta.env.PUBLIC_PROFILE_SOURCE === "github" ? `${base}lookup/` : "");
 ---
 <!doctype html>
 <html lang="en">

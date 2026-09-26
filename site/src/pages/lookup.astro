@@ -1,5 +1,6 @@
 ---
-// Landing page: username lookup app
+const base = import.meta.env.BASE_URL.replace(/\/?$/, "/");
+const staticLookup = import.meta.env.PUBLIC_PROFILE_SOURCE === "github";
 ---
 <!doctype html>
 <html lang="en">
@@ -9,7 +10,7 @@
     <meta name="description" content="Enter any GitHub username and instantly get a portfolio site built from their public repos." />
     <title>Portfolio Profiles</title>
   </head>
-  <body>
+  <body data-base={base} data-static={staticLookup}>
     <main class="hero">
       <h1><span class="accent">auto</span>portfolio</h1>
       <p class="sub">Enter a GitHub username to build a portfolio from their public repositories.</p>
@@ -18,7 +19,7 @@
         <button type="submit">Generate →</button>
       </form>
       <p id="err" class="err hidden"></p>
-      <p class="foot">Live lookups require the local server. <a href="/">View the generated portfolio</a></p>
+      <p class="foot">{staticLookup ? "Public GitHub data · basic repository details" : "Live GitHub data"} · <a href={base}>View the generated portfolio</a></p>
     </main>
   </body>
 </html>
@@ -46,11 +47,15 @@
   const input = document.getElementById("user");
   const err = document.getElementById("err");
   const VALID = /^[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,37}[a-zA-Z0-9])?$/;
+  const base = document.body.dataset.base || "/";
+  const staticLookup = document.body.dataset.static === "true";
   form.addEventListener("submit", (e) => {
     e.preventDefault();
     const name = input.value.trim();
     if (!VALID.test(name)) { err.textContent = "Not a valid GitHub username."; err.classList.remove("hidden"); return; }
     err.classList.add("hidden");
-    location.href = "/profile/" + encodeURIComponent(name);
+    location.href = staticLookup
+      ? base + "profile/?user=" + encodeURIComponent(name)
+      : "/profile/" + encodeURIComponent(name);
   });
 </script>

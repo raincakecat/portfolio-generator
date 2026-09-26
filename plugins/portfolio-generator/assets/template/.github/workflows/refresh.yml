@@ -48,8 +48,7 @@ jobs:
         working-directory: site
         env:
           PUBLIC_LOOKUP_URL: ${{ vars.PUBLIC_LOOKUP_URL }}
-      - name: Exclude server-only pages from GitHub Pages
-        run: rm -r site/dist/lookup site/dist/profile
+          PUBLIC_PROFILE_SOURCE: github
       - uses: actions/upload-pages-artifact@v3
         with:
           path: site/dist

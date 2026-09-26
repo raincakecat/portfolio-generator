@@ -30,7 +30,7 @@ cd site && npm run build && cd ..
 npm run serve
 ```
 
-Open `http://127.0.0.1:8080/lookup` to look up another public GitHub user. The local server provides `/api/profile` and serves the built site. The live lookup requires this server; GitHub Pages serves the static portfolio only. Set `HOST`, `PORT`, `RATE_FRESH_PER_HOUR`, or `RATE_GLOBAL_PER_HOUR` as environment variables if needed.
+Open `http://127.0.0.1:8080/lookup` to look up another public GitHub user. The local server provides `/api/profile` and serves the built site. This version reads README and commit data. Set `HOST`, `PORT`, `RATE_FRESH_PER_HOUR`, or `RATE_GLOBAL_PER_HOUR` as environment variables if needed. GitHub Pages also provides a basic browser-based lookup without the server.
 
 ## Publish the live lookup
 
@@ -38,7 +38,7 @@ Open `http://127.0.0.1:8080/lookup` to look up another public GitHub user. The l
 
 The Blueprint uses Render's Free plan. A Free service can sleep after inactivity, so its first request after a quiet period can be slow. Its cache and rate counters are in memory and reset when the service restarts. For steady traffic, use a paid service and a persistent rate-limit store.
 
-To link to the live lookup from the GitHub Pages homepage, add a GitHub Actions repository variable named `PUBLIC_LOOKUP_URL` with the full Render lookup URL, such as `https://your-service.onrender.com/lookup`. Then run the **Refresh and deploy portfolio** workflow again. The Render-hosted homepage links to its own `/lookup` automatically.
+The Render-hosted homepage links to its own `/lookup` automatically. GitHub Pages also offers a basic public lookup directly in the browser, using GitHub's unauthenticated API. It shows repository metadata and descriptions without README or commit analysis, and visitors share GitHub's 60 requests-per-hour limit with other unauthenticated requests from their IP. If you prefer the richer Render lookup, set a GitHub Actions repository variable named `PUBLIC_LOOKUP_URL` to the full Render lookup URL, such as `https://your-service.onrender.com/lookup`, and run the workflow again.
 
 ## Publish with GitHub Pages
 
@@ -51,7 +51,7 @@ To publish:
 3. In the repository, open **Settings → Pages → Build and deployment** and set **Source** to **GitHub Actions**.
 4. Check the **Refresh and deploy portfolio** run in the **Actions** tab. After it succeeds, the portfolio appears at the Pages URL shown in the deployment.
 
-The workflow publishes the generated site; it does not commit refreshed data back to the repository. The live username lookup is intentionally excluded from GitHub Pages because it needs the local server and GitHub API access.
+The workflow publishes the generated site and browser-based lookup; it does not commit refreshed data back to the repository. The richer server lookup requires Render or another Node host.
 
 GitHub Actions provides `GITHUB_TOKEN` automatically. No personal access token is needed for public repositories. The generator scans up to 300 owned, public, non-fork repositories and fetches details in groups of 12. GitHub API rate limits and repository size limits still apply.
 
