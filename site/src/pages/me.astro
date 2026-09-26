@@ -35,7 +35,7 @@ const categories = [...new Set(projects.map((p) => p.category))];
     </div>
 
     <main class="grid" id="grid">
-      {projects.map((p) => <ProjectCard project={p} demphasized={p.status === "archived"} />)}
+      {projects.map((p) => <ProjectCard project={p} />)}
     </main>
     <p id="empty" class="empty hidden">No projects match these filters.</p>
 
@@ -81,7 +81,7 @@ const categories = [...new Set(projects.map((p) => p.category))];
       const status = card.getAttribute("data-status");
       const show =
         (activeFilter === "all" || cat === activeFilter) &&
-        (!activeOnly || status !== "archived");
+        (!activeOnly || status === "active");
       card.hidden = !show;
       if (show) visible++;
     }

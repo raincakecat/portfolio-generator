@@ -30,6 +30,13 @@ export function categoryFor(repo, description, existing = "Other") {
   return "Other";
 }
 
+export function projectStatus(repo, now = Date.now()) {
+  if (repo.archived) return "archived";
+  const days = (now - new Date(repo.pushed_at).getTime()) / 86400000;
+  if (days <= 60) return "active";
+  return days <= 365 ? "maintained" : "inactive";
+}
+
 export async function fetchReadmeIntro(repo, request = fetch) {
   const owner = encodeURIComponent(repo.owner.login);
   const name = encodeURIComponent(repo.name);

@@ -13,6 +13,7 @@ const staticLookup = import.meta.env.PUBLIC_PROFILE_SOURCE === "github";
   <body data-base={base} data-static={staticLookup} data-built-user={projectsData.github_user}>
     <header>
       <a class="back" href={`${base}lookup/`}>← auto<span class="accent">portfolio</span></a>
+      <button id="save-pdf" class="save-pdf" type="button" title="Load more projects first if you want them in the PDF" disabled>Save as PDF</button>
     </header>
     <main>
       <div class="title">
@@ -31,9 +32,14 @@ const staticLookup = import.meta.env.PUBLIC_PROFILE_SOURCE === "github";
 
 <style is:global>
   :root { color-scheme: dark; }
+  * { box-sizing: border-box; }
   body { margin: 0; background: #0d0d0d; color: #eee; font-family: system-ui, sans-serif; max-width: 1100px; margin: 0 auto; padding: 1.5rem 1.25rem 4rem; }
+  header { display: flex; justify-content: space-between; align-items: center; gap: 1rem; }
   .back { color: #888; text-decoration: none; font-size: 0.9rem; }
   .accent { color: #2ecc71; }
+  .save-pdf { background: #1a1a1a; color: #eee; border: 1px solid #393939; border-radius: 8px; padding: .5rem .85rem; cursor: pointer; font: inherit; font-size: .85rem; }
+  .save-pdf:hover:not(:disabled) { border-color: #2ecc71; }
+  .save-pdf:disabled { opacity: .5; cursor: wait; }
   h1 { margin: 1rem 0 0.2rem; font-size: 2rem; letter-spacing: -0.02em; }
   .meta { margin: 0 0 1.5rem; color: #9a9a9a; font-size: 0.85rem; }
   .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 1rem; }
@@ -44,7 +50,6 @@ const staticLookup = import.meta.env.PUBLIC_PROFILE_SOURCE === "github";
   #more { background: #1a1a1a; color: #eee; border: 1px solid #2e2e2e; padding: 0.6rem 1.4rem; border-radius: 999px; cursor: pointer; font-size: 0.9rem; }
   #more:hover { border-color: #2ecc71; }
   .card { border: 1px solid #2a2a2a; border-radius: 12px; padding: 1.25rem; background: #161616; display: flex; flex-direction: column; gap: 0.6rem; }
-  .card.archived { opacity: 0.45; }
   .card-top { display: flex; justify-content: space-between; }
   .tag { font-size: 0.72rem; font-weight: 600; padding: 0.2rem 0.55rem; border-radius: 999px; border: 1px solid; }
   .stars { color: #f1c40f; font-size: 0.8rem; }
@@ -56,11 +61,28 @@ const staticLookup = import.meta.env.PUBLIC_PROFILE_SOURCE === "github";
   .pill { font-size: 0.7rem; color: #d0d0d0; background: #232323; padding: 0.18rem 0.5rem; border-radius: 6px; }
   .card-foot { display: flex; justify-content: space-between; font-size: 0.78rem; }
   .active { color: #2ecc71; }
+  .older-tag { color: #aaa; }
   .archived-tag { color: #7f8c8d; }
+  @page { size: A4 portrait; margin: 14mm; }
+  @media print {
+    :root { color-scheme: light; }
+    body { max-width: none; padding: 0; background: #fff !important; color: #111 !important; font-size: 10pt; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+    header, .more-wrap { display: none !important; }
+    h1 { margin: 0 0 .2rem; }
+    .meta { color: #555; margin-bottom: 1rem; }
+    .grid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: .5rem; }
+    .card { break-inside: avoid; background: #fff !important; border-color: #bbb; }
+    .card h2 a { color: #111; }
+    .desc, .older-tag, .archived-tag { color: #444; }
+    .pill { background: #eee; color: #222; }
+    .active { color: #156b3b; }
+    .stars { color: #806000; }
+    .err, .empty { display: none; }
+  }
 </style>
 
 <script>
-  import { usefulDescription, categoryFor, fetchReadmeIntro } from "../../lib/browser-profile.js";
+  import { usefulDescription, categoryFor, fetchReadmeIntro, projectStatus } from "../../lib/browser-profile.js";
   const CATEGORY_COLORS = {
     "Discord Bot": "#5865F2",
     "Minecraft Plugin": "#44bd32",
@@ -82,6 +104,7 @@ const staticLookup = import.meta.env.PUBLIC_PROFILE_SOURCE === "github";
   const empty = document.getElementById("empty");
   const errorBox = document.getElementById("error");
   const moreBtn = document.getElementById("more");
+  const savePdfBtn = document.getElementById("save-pdf");
   let offset = 0;
   let loading = false;
   let repoPromise = null;
@@ -127,12 +150,11 @@ const staticLookup = import.meta.env.PUBLIC_PROFILE_SOURCE === "github";
       if (!description) description = await fetchReadmeIntro(repo);
       if (!description) description = "No project description is available.";
       const category = categoryFor(repo, description, generated?.category);
-      const days = (Date.now() - new Date(repo.pushed_at).getTime()) / 86400000;
       return {
         name: repo.name, repo_url: repo.html_url, category,
         tech_stack: generated?.tech_stack?.length ? generated.tech_stack : repo.language ? [repo.language] : [],
         description,
-        status: days <= 60 ? "active" : days <= 365 ? "maintained" : "archived",
+        status: projectStatus(repo),
         last_commit_at: repo.pushed_at, stars: repo.stargazers_count || 0,
       };
     }));
@@ -147,13 +169,14 @@ const staticLookup = import.meta.env.PUBLIC_PROFILE_SOURCE === "github";
     if (days < 30) return days + " days ago";
     const m = Math.floor(days / 30);
     if (m < 12) return m + " month" + (m > 1 ? "s" : "") + " ago";
-    return Math.floor(m / 12) + " year(s) ago";
+    const years = Math.floor(m / 12);
+    return years + " year" + (years > 1 ? "s" : "") + " ago";
   }
 
   // All repo content is inserted via textContent/createElement only - never innerHTML.
   function card(p) {
     const el = document.createElement("article");
-    el.className = "card" + (p.status === "archived" ? " archived" : "");
+    el.className = "card";
 
     const top = document.createElement("div"); top.className = "card-top";
     const tag = document.createElement("span"); tag.className = "tag";
@@ -174,8 +197,8 @@ const staticLookup = import.meta.env.PUBLIC_PROFILE_SOURCE === "github";
 
     const foot = document.createElement("div"); foot.className = "card-foot";
     const st = document.createElement("span");
-    if (p.status === "archived") { st.className = "archived-tag"; st.textContent = "archived"; }
-    else { st.className = "active"; st.textContent = "updated " + relTime(p.last_commit_at); }
+    if (p.status === "archived") { st.className = "archived-tag"; st.textContent = "Archived on GitHub"; }
+    else { st.className = p.status === "inactive" ? "older-tag" : "active"; st.textContent = "updated " + relTime(p.last_commit_at); }
     foot.appendChild(st);
 
     el.append(top, h2, desc, pills, foot);
@@ -193,6 +216,7 @@ const staticLookup = import.meta.env.PUBLIC_PROFILE_SOURCE === "github";
       document.getElementById("name").textContent = data.username;
       document.getElementById("meta").textContent = grid.children.length + data.shown + " of " + data.total_repos + " public repos · generated " + relTime(data.generated_at);
       for (const p of data.projects) grid.appendChild(card(p));
+      savePdfBtn.disabled = grid.children.length === 0;
       empty.classList.toggle("hidden", data.total_repos > 0);
       moreBtn.classList.toggle("hidden", !data.has_more);
       if (data.has_more && data.next_offset !== null) {
@@ -213,5 +237,6 @@ const staticLookup = import.meta.env.PUBLIC_PROFILE_SOURCE === "github";
   function moreButtonDisabled(v) { moreBtn.disabled = v; moreBtn.textContent = v ? "Loading…" : "Load more"; }
 
   document.getElementById("more").addEventListener("click", load);
+  savePdfBtn.addEventListener("click", () => window.print());
   load();
 </script>

@@ -46,7 +46,7 @@ for (let i = 0; i < selected.length; i += LIMITS.MAX_REPOS_PER_PAGE) {
 }
 
 projects.sort((a, b) => {
-  const statusOrder = { active: 0, maintained: 1, archived: 2 };
+  const statusOrder = { active: 0, maintained: 1, inactive: 2, archived: 3 };
   if (statusOrder[a.status] !== statusOrder[b.status]) return statusOrder[a.status] - statusOrder[b.status];
   return new Date(b.last_commit_at) - new Date(a.last_commit_at);
 });

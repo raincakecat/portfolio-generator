@@ -21,6 +21,8 @@ cd site && npm run dev
 
 The site preview opens at the address printed by Astro. The homepage shows the configured user's projects. `/me/` is an alias for the same portfolio.
 
+On a generated `/profile/` page, use **Save as PDF** and choose your browser's PDF destination. If the page has a **Load more** button, load the projects you want included before saving. Older repositories stay readable and show their last update; only repositories actually archived on GitHub receive an archived label.
+
 For an optional GitHub token, copy `.env.example` to `.env` and fill in `GITHUB_TOKEN`. The file is ignored by Git. The generator and local server load it automatically. Without a token, GitHub's unauthenticated API limit applies.
 
 ## Build and serve the live lookup

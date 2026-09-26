@@ -39,7 +39,7 @@ const lookupUrl = import.meta.env.PUBLIC_LOOKUP_URL || (import.meta.env.PUBLIC_P
     </div>
 
     <main class="grid" id="grid">
-      {projects.map((p) => <ProjectCard project={p} demphasized={p.status === "archived"} />)}
+      {projects.map((p) => <ProjectCard project={p} />)}
     </main>
     <p id="empty" class="empty hidden">No projects match these filters.</p>
 
@@ -88,7 +88,7 @@ const lookupUrl = import.meta.env.PUBLIC_LOOKUP_URL || (import.meta.env.PUBLIC_P
       const status = card.getAttribute("data-status");
       const show =
         (activeFilter === "all" || cat === activeFilter) &&
-        (!activeOnly || status !== "archived");
+        (!activeOnly || status === "active");
       card.hidden = !show;
       if (show) visible++;
     }

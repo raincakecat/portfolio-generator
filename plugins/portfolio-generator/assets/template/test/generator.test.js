@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { ProfileEngine, extractIntro, refineCategoryFromReadme, slugify } from "../generator/lib.js";
-import { categoryFor, fetchReadmeIntro, usefulDescription } from "../site/src/lib/browser-profile.js";
+import { ProfileEngine, extractIntro, refineCategoryFromReadme, slugify, statusFromLastCommit } from "../generator/lib.js";
+import { categoryFor, fetchReadmeIntro, projectStatus, usefulDescription } from "../site/src/lib/browser-profile.js";
 
 test("repository slugs remain unique across GitHub punctuation", () => {
   const names = ["foo-bar", "foo.bar", "foo_bar"];
@@ -30,6 +30,14 @@ test("short READMEs identify a project's purpose and category", async () => {
   assert.equal(refineCategoryFromReadme("Other", markdown), "Fabric Mod");
   assert.equal(usefulDescription("A Java project."), false);
   assert.equal(usefulDescription(description), true);
+});
+
+test("old repositories remain readable without being labeled GitHub archived", () => {
+  const oldDate = "2020-01-01T00:00:00Z";
+  assert.equal(statusFromLastCommit(oldDate, false), "inactive");
+  assert.equal(statusFromLastCommit(oldDate, true), "archived");
+  assert.equal(projectStatus({ pushed_at: oldDate, archived: false }), "inactive");
+  assert.equal(projectStatus({ pushed_at: oldDate, archived: true }), "archived");
 });
 
 test("profile cache normalizes username and keeps filter choices separate", async () => {

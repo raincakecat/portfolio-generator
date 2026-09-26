@@ -32,11 +32,12 @@ export function slugify(name) {
 
 export const GITHUB_USERNAME_RE = /^[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,37}[a-zA-Z0-9])?$/;
 
-function statusFromLastCommit(lastCommitAt) {
+export function statusFromLastCommit(lastCommitAt, githubArchived = false) {
+  if (githubArchived) return "archived";
   const days = (Date.now() - new Date(lastCommitAt).getTime()) / 86400000;
   if (days <= ACTIVE_DAYS) return "active";
   if (days <= MAINTAINED_DAYS) return "maintained";
-  return "archived";
+  return "inactive";
 }
 
 function stripMd(line) {
@@ -274,7 +275,7 @@ export class ProfileEngine {
       category,
       tech_stack: techStack,
       description,
-      status: statusFromLastCommit(lastCommitAt),
+      status: statusFromLastCommit(lastCommitAt, repo.archived),
       last_commit_at: lastCommitAt,
       commit_count_90d: commitCount90,
       stars: repo.stargazers_count || 0,
@@ -296,7 +297,7 @@ export class ProfileEngine {
       const { selected, totalRepos } = await this.listRepos({ username, include, exclude });
       const visible = selected.slice(offset, offset + limit);
       const projects = await Promise.all(visible.map((r) => this.repoDetail(r)));
-      const statusOrder = { active: 0, maintained: 1, archived: 2 };
+      const statusOrder = { active: 0, maintained: 1, inactive: 2, archived: 3 };
       projects.sort((a, b) => {
         if (statusOrder[a.status] !== statusOrder[b.status]) return statusOrder[a.status] - statusOrder[b.status];
         return new Date(b.last_commit_at) - new Date(a.last_commit_at);
