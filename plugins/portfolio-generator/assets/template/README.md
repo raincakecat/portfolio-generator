@@ -40,7 +40,7 @@ Open `http://127.0.0.1:8080/lookup` to look up another public GitHub user. The l
 
 The Blueprint uses Render's Free plan. A Free service can sleep after inactivity, so its first request after a quiet period can be slow. Its cache and rate counters are in memory and reset when the service restarts. For steady traffic, use a paid service and a persistent rate-limit store.
 
-The Render-hosted homepage links to its own `/lookup` automatically. GitHub Pages also offers a public lookup directly in the browser. It uses the generated summaries for the configured account and reads public READMEs when another repository lacks a useful description. If neither supplies one, it says so rather than inventing a generic description. Browser visitors share GitHub's unauthenticated 60 requests-per-hour limit with other requests from their IP. If you prefer the richer Render lookup, set a GitHub Actions repository variable named `PUBLIC_LOOKUP_URL` to the full Render lookup URL, such as `https://your-service.onrender.com/lookup`, and run the workflow again.
+The Render-hosted homepage links to its own `/lookup` automatically. GitHub Pages also offers a public lookup directly in the browser. It uses the generated summaries for the configured account and reads public READMEs when another repository lacks a useful description or its project type is still unclear. If neither supplies a description, it says so rather than inventing one. Browser visitors share GitHub's unauthenticated 60 requests-per-hour limit with other requests from their IP. If you prefer the richer Render lookup, set a GitHub Actions repository variable named `PUBLIC_LOOKUP_URL` to the full Render lookup URL, such as `https://your-service.onrender.com/lookup`, and run the workflow again.
 
 ## Publish with GitHub Pages
 
@@ -61,7 +61,7 @@ GitHub Actions provides `GITHUB_TOKEN` automatically. No personal access token i
 
 The generator reads repository metadata, file trees, README files, common dependency manifests, and recent commits. It extracts a useful README introduction even from short READMEs, uses a repository description when no useful introduction exists, and falls back to a rule-based description only when neither is available. It does not call an AI service. `generator/summary-cache.json` stores descriptions locally and is ignored by Git.
 
-Project categories use the repository's purpose, topics, README introduction, dependencies, and project files. They cover MCP servers, wikis, flashcards, desktop and mobile apps, libraries, CLI tools, APIs, games, and more. When there is too little evidence, the site uses **Software Project**. Use `manual_overrides` for projects that need a specific category.
+Project categories use each repository's name, purpose, topics, README introduction, dependencies, and project files. The same rules apply to every account in the live lookup. They cover MCP servers, wikis, flashcards, configuration, script collections, survey apps, desktop and mobile apps, libraries, CLI tools, APIs, games, and more. When there is too little evidence, the site uses **Software Project**. Use `manual_overrides` for projects that need a specific category.
 
 Manual overrides are applied after generation. Example:
 
@@ -80,6 +80,10 @@ Manual overrides are applied after generation. Example:
 ```
 
 Run `npm test` for generator checks, `cd site && npm run build` for the static build, and `npm audit --omit=dev` in both directories to check installed dependencies.
+
+## Codex plugin
+
+`plugins/portfolio-generator/` is an installable Codex plugin with a reusable project template and a `create-portfolio` skill. `.agents/plugins/marketplace.json` makes it discoverable as a repository marketplace. After cloning the repository, run `codex plugin marketplace add .` from its root, then `codex plugin add portfolio-generator@portfolio_generator`. The plugin copies its template into a new project, configures a GitHub username, and runs generation and build checks.
 
 ## License
 

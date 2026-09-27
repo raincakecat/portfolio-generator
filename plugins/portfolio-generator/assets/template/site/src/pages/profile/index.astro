@@ -82,7 +82,7 @@ const staticLookup = import.meta.env.PUBLIC_PROFILE_SOURCE === "github";
 </style>
 
 <script>
-  import { usefulDescription, categoryFor, fetchReadmeIntro, projectStatus } from "../../lib/browser-profile.js";
+  import { usefulDescription, categoryFor, fetchReadmeDetails, projectStatus } from "../../lib/browser-profile.js";
   import { CATEGORY_COLORS } from "../../lib/project-category.js";
   const VALID = /^[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,37}[a-zA-Z0-9])?$/;
   const base = document.body.dataset.base || "/";
@@ -141,9 +141,18 @@ const staticLookup = import.meta.env.PUBLIC_PROFILE_SOURCE === "github";
       const generated = built.get(repo.name.toLowerCase());
       let description = usefulDescription(generated?.description) ? generated.description : "";
       if (!description && usefulDescription(repo.description)) description = repo.description.trim();
-      if (!description) description = await fetchReadmeIntro(repo);
+      let readme = "";
+      if (!description) {
+        const details = await fetchReadmeDetails(repo);
+        readme = details.text;
+        description = details.intro;
+      }
       if (!description) description = "No project description is available.";
-      const category = categoryFor(repo, description, generated?.category);
+      let category = categoryFor(repo, description, generated?.category, readme);
+      if (category === "Software Project" && !readme) {
+        readme = (await fetchReadmeDetails(repo)).text;
+        category = categoryFor(repo, description, generated?.category, readme);
+      }
       return {
         name: repo.name, repo_url: repo.html_url, category,
         tech_stack: generated?.tech_stack?.length ? generated.tech_stack : repo.language ? [repo.language] : [],

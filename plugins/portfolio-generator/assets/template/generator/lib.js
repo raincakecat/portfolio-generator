@@ -219,7 +219,7 @@ export class ProfileEngine {
 
     const intro = readme ? extractIntro(readme) : "";
     const category = classifyProject({
-      name, description: repo.description, readme: intro, topics: repo.topics || [], treeEntries,
+      name, description: repo.description, readme: readme.slice(0, 4000), topics: repo.topics || [], treeEntries,
       dependencies: { ...(pkgJson?.dependencies || {}), ...(pkgJson?.devDependencies || {}) },
     });
     const techStack = extractTechStack(treeEntries, pkgJson, fileContents, repo.language);

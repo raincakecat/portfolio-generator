@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 import { ProfileEngine, extractIntro, slugify, statusFromLastCommit } from "../generator/lib.js";
-import { categoryFor, fetchReadmeIntro, projectStatus, usefulDescription } from "../site/src/lib/browser-profile.js";
+import { categoryFor, fetchReadmeDetails, fetchReadmeIntro, projectStatus, usefulDescription } from "../site/src/lib/browser-profile.js";
 import { classifyProject } from "../site/src/lib/project-category.js";
 
 test("repository slugs remain unique across GitHub punctuation", () => {
@@ -33,6 +33,25 @@ test("short READMEs identify a project's purpose and category", async () => {
   assert.equal(usefulDescription(description), true);
 });
 
+test("a short README can classify a repository with no GitHub description", async () => {
+  const repo = { owner: { login: "nickyleach" }, name: "OSTSurvey", topics: [], description: null };
+  const request = async () => ({ ok: true, json: async () => ({
+    encoding: "base64", content: Buffer.from("# OSTSurvey\n\nA tool to create surveys\n\n## Basic Goals\nUsers can vote.").toString("base64"),
+  }) });
+  const intro = await fetchReadmeIntro(repo, request);
+  assert.equal(intro, "A tool to create surveys");
+  assert.equal(categoryFor(repo, intro), "Survey App");
+});
+
+test("a vague description can use README details for its project type", async () => {
+  const repo = { owner: { login: "nickyleach" }, name: "phpnimble", topics: [], description: "PHPNimble. Like PHPSpry but more nimble" };
+  const request = async () => ({ ok: true, json: async () => ({
+    encoding: "base64", content: Buffer.from("# PHPNimble\n\nPHPNimble. Like PHPSpry but more nimble.\n\nRoute all requests through the routing script in index.php.").toString("base64"),
+  }) });
+  const details = await fetchReadmeDetails(repo, request);
+  assert.equal(categoryFor(repo, repo.description, "Software Project", details.text), "Package / Framework");
+});
+
 test("project categories identify the purpose shown in repository descriptions", () => {
   const cases = [
     ["decks", "A source-controlled collection of Bible-knowledge flashcards, built into one canonical Anki package.", "Flashcards"],
@@ -41,6 +60,13 @@ test("project categories identify the purpose shown in repository descriptions",
     ["mcp-wizzypedia", "A Model Context Protocol (MCP) server for interacting with the Wizzpedia APIs.", "MCP Server"],
     ["dotta-license", "ERC721-based Software Licensing Framework", "Licensing Tool"],
     ["cloudability", "Cloudability API wrapper for node.js", "Library / SDK"],
+    ["fifttt", "A fake IFTTT service", "Automation"],
+    ["dotfiles", "Configuration files for a happy developer", "Configuration"],
+    ["OSTSurvey", "The system should handle multiple users and associate surveys and votes with a logged in user.", "Survey App"],
+    ["OSS-Match", "Tool for matching developers to open source projects based on coding styles", "Developer Tool"],
+    ["shell-scripts", "Collection of miscellaneous shell scripts", "Script Collection"],
+    ["jQuery.bindLast", "Binds events to be triggered after other events", "Library / SDK"],
+    ["yql-php", "YQL wrapper class for PHP", "Library / SDK"],
     ["plain-project", "", "Software Project"],
   ];
   for (const [name, description, expected] of cases) {
@@ -49,6 +75,7 @@ test("project categories identify the purpose shown in repository descriptions",
   }
   assert.equal(classifyProject({ treeEntries: ["src/main/resources/fabric.mod.json"], description: "A mod" }), "Fabric Mod");
   assert.equal(classifyProject({ dependencies: { "discord.js": "^14" }, description: "A bot" }), "Discord Bot");
+  assert.equal(categoryFor({ name: "vague", description: "A PHP project", topics: [] }, "A PHP project", "Software Project", "A framework for PHP projects."), "Package / Framework");
 });
 
 test("old repositories remain readable without being labeled GitHub archived", () => {
