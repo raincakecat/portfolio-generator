@@ -37,14 +37,26 @@ export function projectStatus(repo, now = Date.now()) {
 export async function fetchReadmeDetails(repo, request = fetch) {
   const owner = encodeURIComponent(repo.owner.login);
   const name = encodeURIComponent(repo.name);
+  const details = (text) => {
+    const sample = text.slice(0, 4000);
+    return { intro: readmeIntro(sample), text: sample };
+  };
+  if (repo.default_branch) {
+    const branch = encodeURIComponent(repo.default_branch);
+    for (const filename of ["README.md", "readme.md", "README.rst", "README", "README.txt"]) {
+      try {
+        const response = await request(`https://raw.githubusercontent.com/${owner}/${name}/${branch}/${filename}`);
+        if (response.ok) return details(await response.text());
+      } catch { /* Try another common README name. */ }
+    }
+  }
   try {
     const response = await request(`https://api.github.com/repos/${owner}/${name}/readme`);
     if (!response.ok) return { intro: "", text: "" };
     const data = await response.json();
     if (data.encoding !== "base64" || !data.content) return { intro: "", text: "" };
     const bytes = Uint8Array.from(atob(data.content.replace(/\s/g, "")), (c) => c.charCodeAt(0));
-    const text = new TextDecoder().decode(bytes).slice(0, 4000);
-    return { intro: readmeIntro(text), text };
+    return details(new TextDecoder().decode(bytes));
   } catch { return { intro: "", text: "" }; }
 }
 

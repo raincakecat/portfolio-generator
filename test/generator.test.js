@@ -52,6 +52,18 @@ test("a vague description can use README details for its project type", async ()
   assert.equal(categoryFor(repo, repo.description, "Software Project", details.text), "Package / Framework");
 });
 
+test("public README files classify projects without using GitHub API quota", async () => {
+  const requests = [];
+  const repo = { owner: { login: "nicoloboschi" }, name: "tichit", default_branch: "main" };
+  const details = await fetchReadmeDetails(repo, async (url) => {
+    requests.push(url);
+    return { ok: true, text: async () => "# Tichit\n\nA macOS menu-bar app that improves your English." };
+  });
+  assert.equal(requests.length, 1);
+  assert.match(requests[0], /^https:\/\/raw\.githubusercontent\.com\//);
+  assert.equal(categoryFor(repo, details.intro, "Software Project", details.text), "Desktop App");
+});
+
 test("project categories identify the purpose shown in repository descriptions", () => {
   const cases = [
     ["decks", "A source-controlled collection of Bible-knowledge flashcards, built into one canonical Anki package.", "Flashcards"],
@@ -68,6 +80,21 @@ test("project categories identify the purpose shown in repository descriptions",
     ["jQuery.bindLast", "Binds events to be triggered after other events", "Library / SDK"],
     ["yql-php", "YQL wrapper class for PHP", "Library / SDK"],
     ["Linkify", "Coffeescript class that detects URLs in a string and wraps them in hrefs.", "Library / SDK"],
+    ["sheepit", "Your machine, anywhere. A full-featured terminal in your browser.", "Browser Terminal"],
+    ["my-skills", "Agent skills for software engineering work", "Skills Collection"],
+    ["tichit", "macOS menu bar app that rewrites your English natively", "Desktop App"],
+    ["seo-booster", "", "SEO Tool"],
+    ["gh-stars", "A repository-owned, embeddable GitHub star-history chart.", "Data Visualization"],
+    ["pgvector_compiled", "Precompiled OS packages for pgvector", "Binary Package"],
+    ["blog", "A personal blog built with Hugo", "Blog"],
+    ["localmaxxing", "Benchmark modern open-source LLMs on the MLX backend", "Benchmark"],
+    ["homebrew-tap", "Homebrew tap for Hindsight", "Package Repository"],
+    ["hindsight-desktop", "A macOS/Windows/Linux menu-bar app", "Desktop App"],
+    ["sda-factory", "A local UI to build and run a fleet of Self-Driving Agents", "Agent Tool"],
+    ["pgdoctor", "A pre-configured Postgres-in-docker for performance debugging", "Database Tool"],
+    ["dockerpyze", "Python applications to Docker, automatically", "Developer Tool"],
+    ["mentor", "An interactive AI-powered learning platform", "Learning App"],
+    ["pulsar-io-google-pubsub", "A connector for copying data between Pub/Sub and Pulsar", "Integration"],
     ["plain-project", "", "Software Project"],
   ];
   for (const [name, description, expected] of cases) {
@@ -77,6 +104,8 @@ test("project categories identify the purpose shown in repository descriptions",
   assert.equal(classifyProject({ treeEntries: ["src/main/resources/fabric.mod.json"], description: "A mod" }), "Fabric Mod");
   assert.equal(classifyProject({ dependencies: { "discord.js": "^14" }, description: "A bot" }), "Discord Bot");
   assert.equal(categoryFor({ name: "vague", description: "A PHP project", topics: [] }, "A PHP project", "Software Project", "A framework for PHP projects."), "Package / Framework");
+  assert.equal(classifyProject({ name: "maven-npm", description: "A simple Maven Web Application", readme: "Configuration files are explained later in the guide." }), "Web App");
+  assert.equal(classifyProject({ name: "mentor", readme: "An AI-powered learning platform. Later it can also create surveys." }), "Learning App");
 });
 
 test("old repositories remain readable without being labeled GitHub archived", () => {
