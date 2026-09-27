@@ -1,5 +1,6 @@
 ---
 import projectsData from "../../data/projects.json";
+import { CATEGORY_COLORS } from "../../lib/project-category.js";
 
 export function getStaticPaths() {
   return projectsData.projects.map((p) => ({
@@ -9,14 +10,7 @@ export function getStaticPaths() {
 }
 
 const { project } = Astro.props;
-const CATEGORY_COLORS: Record<string, string> = {
-  "Discord Bot": "#5865F2",
-  "Minecraft Plugin": "#44bd32",
-  "Fabric Mod": "#c0392b",
-  "Web App": "#2980b9",
-  Other: "#7f8c8d",
-};
-const color = CATEGORY_COLORS[project.category] || CATEGORY_COLORS.Other;
+const color = CATEGORY_COLORS[project.category] || CATEGORY_COLORS["Software Project"];
 const base = import.meta.env.BASE_URL.replace(/\/?$/, "/");
 ---
 <!doctype html>

@@ -1,7 +1,8 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { ProfileEngine, extractIntro, refineCategoryFromReadme, slugify, statusFromLastCommit } from "../generator/lib.js";
+import { ProfileEngine, extractIntro, slugify, statusFromLastCommit } from "../generator/lib.js";
 import { categoryFor, fetchReadmeIntro, projectStatus, usefulDescription } from "../site/src/lib/browser-profile.js";
+import { classifyProject } from "../site/src/lib/project-category.js";
 
 test("repository slugs remain unique across GitHub punctuation", () => {
   const names = ["foo-bar", "foo.bar", "foo_bar"];
@@ -27,9 +28,27 @@ test("short READMEs identify a project's purpose and category", async () => {
   const description = await fetchReadmeIntro(repo, request);
   assert.match(description, /displays player combat tiers/);
   assert.equal(categoryFor(repo, description), "Fabric Mod");
-  assert.equal(refineCategoryFromReadme("Other", markdown), "Fabric Mod");
+  assert.equal(classifyProject({ readme: markdown }), "Fabric Mod");
   assert.equal(usefulDescription("A Java project."), false);
   assert.equal(usefulDescription(description), true);
+});
+
+test("project categories identify the purpose shown in repository descriptions", () => {
+  const cases = [
+    ["decks", "A source-controlled collection of Bible-knowledge flashcards, built into one canonical Anki package.", "Flashcards"],
+    ["anachronist-wiki", "Static-first, Git-backed technology tree wiki.", "Wiki"],
+    ["diskspice", "the delightful disk space app for mac", "Desktop App"],
+    ["mcp-wizzypedia", "A Model Context Protocol (MCP) server for interacting with the Wizzpedia APIs.", "MCP Server"],
+    ["dotta-license", "ERC721-based Software Licensing Framework", "Licensing Tool"],
+    ["cloudability", "Cloudability API wrapper for node.js", "Library / SDK"],
+    ["plain-project", "", "Software Project"],
+  ];
+  for (const [name, description, expected] of cases) {
+    assert.equal(classifyProject({ name, description }), expected, name);
+    assert.equal(categoryFor({ name, description, topics: [] }, description), expected, name);
+  }
+  assert.equal(classifyProject({ treeEntries: ["src/main/resources/fabric.mod.json"], description: "A mod" }), "Fabric Mod");
+  assert.equal(classifyProject({ dependencies: { "discord.js": "^14" }, description: "A bot" }), "Discord Bot");
 });
 
 test("old repositories remain readable without being labeled GitHub archived", () => {

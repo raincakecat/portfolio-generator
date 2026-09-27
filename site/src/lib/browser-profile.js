@@ -1,3 +1,5 @@
+import { classifyProject } from "./project-category.js";
+
 export function usefulDescription(value) {
   const text = String(value || "").trim();
   return text.length >= 24 && !/^a (?:.+ project|.+ built with .+)\.$/i.test(text);
@@ -21,13 +23,8 @@ export function readmeIntro(markdown) {
 }
 
 export function categoryFor(repo, description, existing = "Other") {
-  if (existing && existing !== "Other") return existing;
-  const text = [repo.name, repo.description, ...(repo.topics || []), description].join(" ").toLowerCase();
-  if (/fabric(?:\s|-)?mod|fabric api/.test(text)) return "Fabric Mod";
-  if (/minecraft(?:\s|-)?plugin|paper(?:\s|-)?plugin|spigot/.test(text)) return "Minecraft Plugin";
-  if (/discord(?:\s|-)?bot|discord\.js/.test(text)) return "Discord Bot";
-  if (/web(?:\s|-)?app|website|astro|next\.js/.test(text)) return "Web App";
-  return "Other";
+  if (existing && existing !== "Other" && existing !== "Software Project") return existing;
+  return classifyProject({ name: repo.name, description: repo.description, readme: description, topics: repo.topics || [] });
 }
 
 export function projectStatus(repo, now = Date.now()) {

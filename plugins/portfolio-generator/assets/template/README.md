@@ -61,6 +61,8 @@ GitHub Actions provides `GITHUB_TOKEN` automatically. No personal access token i
 
 The generator reads repository metadata, file trees, README files, common dependency manifests, and recent commits. It extracts a useful README introduction even from short READMEs, uses a repository description when no useful introduction exists, and falls back to a rule-based description only when neither is available. It does not call an AI service. `generator/summary-cache.json` stores descriptions locally and is ignored by Git.
 
+Project categories use the repository's purpose, topics, README introduction, dependencies, and project files. They cover MCP servers, wikis, flashcards, desktop and mobile apps, libraries, CLI tools, APIs, games, and more. When there is too little evidence, the site uses **Software Project**. Use `manual_overrides` for projects that need a specific category.
+
 Manual overrides are applied after generation. Example:
 
 ```json

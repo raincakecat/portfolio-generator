@@ -83,13 +83,7 @@ const staticLookup = import.meta.env.PUBLIC_PROFILE_SOURCE === "github";
 
 <script>
   import { usefulDescription, categoryFor, fetchReadmeIntro, projectStatus } from "../../lib/browser-profile.js";
-  const CATEGORY_COLORS = {
-    "Discord Bot": "#5865F2",
-    "Minecraft Plugin": "#44bd32",
-    "Fabric Mod": "#c0392b",
-    "Web App": "#2980b9",
-    Other: "#7f8c8d",
-  };
+  import { CATEGORY_COLORS } from "../../lib/project-category.js";
   const VALID = /^[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,37}[a-zA-Z0-9])?$/;
   const base = document.body.dataset.base || "/";
   const staticLookup = document.body.dataset.static === "true";
@@ -180,7 +174,7 @@ const staticLookup = import.meta.env.PUBLIC_PROFILE_SOURCE === "github";
 
     const top = document.createElement("div"); top.className = "card-top";
     const tag = document.createElement("span"); tag.className = "tag";
-    const color = CATEGORY_COLORS[p.category] || CATEGORY_COLORS.Other;
+    const color = CATEGORY_COLORS[p.category] || CATEGORY_COLORS["Software Project"];
     tag.textContent = p.category;
     tag.style.cssText = "background:" + color + "22;color:" + color + ";border-color:" + color + "55";
     top.appendChild(tag);
