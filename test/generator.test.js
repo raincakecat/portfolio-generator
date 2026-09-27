@@ -67,6 +67,7 @@ test("project categories identify the purpose shown in repository descriptions",
     ["shell-scripts", "Collection of miscellaneous shell scripts", "Script Collection"],
     ["jQuery.bindLast", "Binds events to be triggered after other events", "Library / SDK"],
     ["yql-php", "YQL wrapper class for PHP", "Library / SDK"],
+    ["Linkify", "Coffeescript class that detects URLs in a string and wraps them in hrefs.", "Library / SDK"],
     ["plain-project", "", "Software Project"],
   ];
   for (const [name, description, expected] of cases) {

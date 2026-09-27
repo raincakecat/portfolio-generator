@@ -52,7 +52,7 @@ export function classifyProject({ name = "", description = "", readme = "", topi
   if (has(/\bmobile app\b|\bios app\b|\bandroid app\b|\breact native\b|\bflutter app\b/)) return "Mobile App";
   if (has(/\bcommand[ -]?line\b|\bcli(?: tool| app)?\b|\bterminal app\b/)) return "CLI Tool";
   if (has(/\bsoftware licens(?:e|ing)\b|\blicens(?:e|ing) framework\b|\blicense management\b/)) return "Licensing Tool";
-  if (has(/\bsdk\b|\bapi wrapper\b|\bwrapper (?:class|for|around)\b|\bclient library\b|\bsoftware library\b|\bruby gem\b|\b(?:javascript|jquery|php|python|ruby|node(?:\.js)?) (?:library|plugin|package|module)\b|\b(?:library|package|module) for (?:javascript|jquery|php|python|ruby|node(?:\.js)?)\b|\bjquery[. -]/)) return "Library / SDK";
+  if (has(/\bsdk\b|\bapi wrapper\b|\bwrapper (?:class|for|around)\b|\bclient library\b|\bsoftware library\b|\bruby gem\b|\b(?:javascript|jquery|php|python|ruby|node(?:\.js)?) (?:library|plugin|package|module)\b|\b(?:library|package|module) for (?:javascript|jquery|php|python|ruby|node(?:\.js)?)\b|\b(?:coffeescript|javascript|typescript|java|php|python|ruby) class (?:that|for)\b|\bjquery[. -]/)) return "Library / SDK";
   if (has(/\b(?:framework|microframework) for (?:php|ruby|python|node)\b|\b(?:php|ruby|python|node) (?:framework|microframework)\b/)) return "Package / Framework";
   if (has(/\b(?:php|ruby|python)\b/) && has(/\brouting script\b|\brouting engine\b|\b(?:simple|lightweight) router\b/)) return "Package / Framework";
   if (has(/\bapi server\b|\brest(?:ful)? api\b|\bgraphql api\b|\bbackend(?: service)?\b/)) return "API / Backend";
