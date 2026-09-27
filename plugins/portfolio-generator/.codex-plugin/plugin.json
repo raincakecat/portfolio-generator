@@ -1,6 +1,6 @@
 {
   "name": "portfolio-generator",
-  "version": "0.1.0+codex.20260927030914",
+  "version": "0.1.0+codex.20260927060711",
   "description": "Create a GitHub-powered portfolio site from a reusable template.",
   "author": {
     "name": "raincakecat"

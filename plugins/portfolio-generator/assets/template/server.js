@@ -4,7 +4,8 @@ import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { loadEnvFile } from "node:process";
-import { ProfileEngine, LIMITS, GITHUB_USERNAME_RE } from "./generator/lib.js";
+import { LIMITS, GITHUB_USERNAME_RE } from "./generator/lib.js";
+import { PublicProfileService } from "./public-profile-service.js";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 try { loadEnvFile(path.join(__dirname, ".env")); } catch (err) { if (err.code !== "ENOENT") throw err; }
@@ -56,12 +57,17 @@ function safeLog(s) {
   return String(s).replace(/[\r\n\x00-\x1f]/g, "").slice(0, 100);
 }
 
-const engine = new ProfileEngine({ token: process.env.GITHUB_TOKEN || "" });
+const engine = new PublicProfileService({ token: process.env.GITHUB_TOKEN || "" });
+const publicSiteOrigin = process.env.PUBLIC_SITE_ORIGIN || "";
 
-function sendJson(res, status, obj) {
+function sendJson(res, status, obj, req) {
   const body = JSON.stringify(obj);
+  const cors = req?.headers.origin === publicSiteOrigin && publicSiteOrigin
+    ? { "Access-Control-Allow-Origin": publicSiteOrigin, Vary: "Origin" }
+    : {};
   res.writeHead(status, {
     ...BASE_HEADERS,
+    ...cors,
     "Content-Type": "application/json; charset=utf-8",
     "Content-Length": Buffer.byteLength(body),
     "Cache-Control": "no-store",
@@ -71,7 +77,7 @@ function sendJson(res, status, obj) {
 
 async function handleApi(req, res, url) {
   if (req.method !== "GET") {       // audit: GET never mutates
-    return sendJson(res, 405, { error: "not allowed" });
+    return sendJson(res, 405, { error: "not allowed" }, req);
   }
   const username = url.searchParams.get("user") || "";
   const rawOffset = url.searchParams.get("offset") ?? "0";
@@ -79,33 +85,29 @@ async function handleApi(req, res, url) {
 
   // Allow-list validation - reject outright, never silently clean (audit section 4)
   if (!GITHUB_USERNAME_RE.test(username)) {
-    return sendJson(res, 400, { error: "invalid username" });
+    return sendJson(res, 400, { error: "invalid username" }, req);
   }
   if (!Number.isInteger(offset) || offset < 0 || offset > 400 || offset % LIMITS.MAX_REPOS_PER_PAGE !== 0) {
-    return sendJson(res, 400, { error: "invalid offset" });
+    return sendJson(res, 400, { error: "invalid offset" }, req);
   }
 
   const ip = clientIp(req);
-  const isCachedHit = (() => {
-    const key = `${username.toLowerCase()}|${offset}|${LIMITS.MAX_REPOS_PER_PAGE}||`;
-    const c = engine.profileCache.get(key);
-    return !!(c && Date.now() - c.at < engine.cacheTtlMs);
-  })();
+  const isCachedHit = engine.isCached(username, offset);
   if (!allowRate(ip, isCachedHit ? 0 : 1)) {
-    return sendJson(res, 429, { error: "too many requests - try again later" });
+    return sendJson(res, 429, { error: "too many requests - try again later" }, req);
   }
 
   try {
     const profile = await engine.generateProfile({ username, offset });
     // Field allow-list path: profile objects are built server-side from fixed fields only
-    return sendJson(res, 200, profile);
+    return sendJson(res, 200, profile, req);
   } catch (err) {
     if (err && (err.status === 404 || err.status === 403 && /not found/i.test(err.message || ""))) {
-      return sendJson(res, 404, { error: "no such user" });
+      return sendJson(res, 404, { error: "no such user" }, req);
     }
     // Generic error to client; details only in server logs (audit section 12)
     console.error(`[api] ${safeLog(username)} status=${err?.status || "?"} msg=${safeLog(err?.message || err)}`);
-    return sendJson(res, 502, { error: "upstream unavailable - try again later" });
+    return sendJson(res, 502, { error: "upstream unavailable - try again later" }, req);
   }
 }
 
@@ -139,7 +141,7 @@ const server = http.createServer(async (req, res) => {
   try {
     url = new URL(req.url, `http://${req.headers.host || "localhost"}`);
   } catch {
-    return sendJson(res, 400, { error: "bad request" });
+    return sendJson(res, 400, { error: "bad request" }, req);
   }
 
   if (url.pathname === "/api/profile") {
@@ -147,18 +149,18 @@ const server = http.createServer(async (req, res) => {
       await handleApi(req, res, url);
     } catch (err) {
       console.error(`[api] unexpected: ${safeLog(err?.message || err)}`);
-      if (!res.headersSent) sendJson(res, 500, { error: "internal error" });
+      if (!res.headersSent) sendJson(res, 500, { error: "internal error" }, req);
     }
     return;
   }
 
-  if (url.pathname === "/health") return sendJson(res, 200, { ok: true });
+  if (url.pathname === "/health") return sendJson(res, 200, { ok: true }, req);
 
   // ---- Static files from the Astro build with traversal protection ----
   let decodedPath;
   try { decodedPath = decodeURIComponent(url.pathname); }
-  catch { return sendJson(res, 400, { error: "bad path" }); }
-  if (decodedPath.includes("\\") || decodedPath.includes("\0")) return sendJson(res, 400, { error: "bad path" });
+  catch { return sendJson(res, 400, { error: "bad path" }, req); }
+  if (decodedPath.includes("\\") || decodedPath.includes("\0")) return sendJson(res, 400, { error: "bad path" }, req);
   const safePath = path.posix.normalize(decodedPath);
   const candidates = [];
   if (safePath.startsWith("/profile/")) {

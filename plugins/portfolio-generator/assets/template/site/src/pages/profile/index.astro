@@ -2,6 +2,7 @@
 import projectsData from "../../data/projects.json";
 const base = import.meta.env.BASE_URL.replace(/\/?$/, "/");
 const staticLookup = import.meta.env.PUBLIC_PROFILE_SOURCE === "github";
+const profileApiUrl = import.meta.env.PUBLIC_PROFILE_API_URL || "";
 ---
 <!doctype html>
 <html lang="en">
@@ -10,7 +11,7 @@ const staticLookup = import.meta.env.PUBLIC_PROFILE_SOURCE === "github";
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>Portfolio</title>
   </head>
-  <body data-base={base} data-static={staticLookup} data-built-user={projectsData.github_user}>
+  <body data-base={base} data-static={staticLookup} data-api={profileApiUrl} data-built-user={projectsData.github_user}>
     <header>
       <a class="back" href={`${base}lookup/`}>← auto<span class="accent">portfolio</span></a>
       <button id="save-pdf" class="save-pdf" type="button" title="Load more projects first if you want them in the PDF" disabled>Save as PDF</button>
@@ -82,11 +83,12 @@ const staticLookup = import.meta.env.PUBLIC_PROFILE_SOURCE === "github";
 </style>
 
 <script>
-  import { usefulDescription, categoryFor, fetchReadmeDetails, projectStatus } from "../../lib/browser-profile.js";
+  import { usefulDescription, categoryFor, fetchReadmeDetails, fetchPublicRepos, projectStatus } from "../../lib/browser-profile.js";
   import { CATEGORY_COLORS } from "../../lib/project-category.js";
   const VALID = /^[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,37}[a-zA-Z0-9])?$/;
   const base = document.body.dataset.base || "/";
   const staticLookup = document.body.dataset.static === "true";
+  const profileApiUrl = document.body.dataset.api || "";
 
   // The username comes from the URL path - treat it as untrusted input.
   let username = "";
@@ -115,27 +117,28 @@ const staticLookup = import.meta.env.PUBLIC_PROFILE_SOURCE === "github";
     } catch { return new Map(); }
   }
 
-  async function publicRepos() {
-    const all = [];
-    for (let page = 1; page <= 3; page++) {
-      const res = await fetch(`https://api.github.com/users/${encodeURIComponent(username)}/repos?type=owner&sort=pushed&per_page=100&page=${page}`);
-      if (!res.ok) { const error = new Error("GitHub request failed"); error.status = res.status; throw error; }
-      const repos = await res.json();
-      all.push(...repos.filter((repo) => !repo.fork && !repo.private));
-      if (repos.length < 100) break;
-    }
-    return all;
-  }
-
   async function requestProfile() {
+    if (profileApiUrl) {
+      try {
+        const url = new URL(profileApiUrl);
+        url.searchParams.set("user", username);
+        url.searchParams.set("offset", String(offset));
+        const res = await fetch(url, { signal: AbortSignal.timeout(45000) });
+        if (res.ok) return res.json();
+        if (res.status === 404) { const error = new Error("Account not found"); error.status = 404; throw error; }
+      } catch (error) {
+        if (error.status === 404) throw error;
+        // Fall through to the browser lookup when the hosted service is unavailable.
+      }
+    }
     if (!staticLookup) {
       const res = await fetch(`/api/profile?user=${encodeURIComponent(username)}&offset=${offset}`);
       if (!res.ok) { const error = new Error("Profile request failed"); error.status = res.status; throw error; }
       return res.json();
     }
-    repoPromise ||= publicRepos();
+    repoPromise ||= fetchPublicRepos(username);
     builtPromise ||= builtProjects();
-    const [repos, built] = await Promise.all([repoPromise, builtPromise]);
+    const [{ repos, fetchedAt }, built] = await Promise.all([repoPromise, builtPromise]);
     const visible = repos.slice(offset, offset + 12);
     const projects = await Promise.all(visible.map(async (repo) => {
       const generated = built.get(repo.name.toLowerCase());
@@ -162,7 +165,7 @@ const staticLookup = import.meta.env.PUBLIC_PROFILE_SOURCE === "github";
       };
     }));
     const next = offset + visible.length;
-    return { username, total_repos: repos.length, shown: visible.length, has_more: next < repos.length, next_offset: next < repos.length ? next : null, generated_at: new Date().toISOString(), projects };
+    return { username, total_repos: repos.length, shown: visible.length, has_more: next < repos.length, next_offset: next < repos.length ? next : null, generated_at: new Date(fetchedAt).toISOString(), projects };
   }
 
   function relTime(iso) {

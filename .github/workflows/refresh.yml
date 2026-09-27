@@ -49,6 +49,7 @@ jobs:
         env:
           PUBLIC_LOOKUP_URL: ${{ vars.PUBLIC_LOOKUP_URL }}
           PUBLIC_PROFILE_SOURCE: github
+          PUBLIC_PROFILE_API_URL: ${{ vars.PUBLIC_PROFILE_API_URL }}
       - uses: actions/upload-pages-artifact@v3
         with:
           path: site/dist

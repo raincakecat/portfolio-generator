@@ -1,8 +1,9 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 import { ProfileEngine, extractIntro, slugify, statusFromLastCommit } from "../generator/lib.js";
-import { categoryFor, fetchReadmeDetails, fetchReadmeIntro, projectStatus, usefulDescription } from "../site/src/lib/browser-profile.js";
+import { categoryFor, fetchPublicRepos, fetchReadmeDetails, fetchReadmeIntro, projectStatus, usefulDescription } from "../site/src/lib/browser-profile.js";
 import { classifyProject } from "../site/src/lib/project-category.js";
+import { PublicProfileService } from "../public-profile-service.js";
 
 test("repository slugs remain unique across GitHub punctuation", () => {
   const names = ["foo-bar", "foo.bar", "foo_bar"];
@@ -23,8 +24,8 @@ test("README introduction keeps version numbers and excludes list items", () => 
 
 test("short READMEs identify a project's purpose and category", async () => {
   const markdown = "# Cat Tiers Tagger\n\nA Fabric mod that displays player combat tiers and gamemode icons on nametags in Minecraft.\n\n## Install\nCopy the JAR into your mods folder.";
-  const repo = { owner: { login: "raincakecat" }, name: "Cat-Tiers-Tier-Tagger", topics: [] };
-  const request = async () => ({ ok: true, json: async () => ({ encoding: "base64", content: Buffer.from(markdown).toString("base64") }) });
+  const repo = { owner: { login: "raincakecat" }, name: "Cat-Tiers-Tier-Tagger", default_branch: "main", topics: [] };
+  const request = async () => ({ ok: true, text: async () => markdown });
   const description = await fetchReadmeIntro(repo, request);
   assert.match(description, /displays player combat tiers/);
   assert.equal(categoryFor(repo, description), "Fabric Mod");
@@ -34,20 +35,16 @@ test("short READMEs identify a project's purpose and category", async () => {
 });
 
 test("a short README can classify a repository with no GitHub description", async () => {
-  const repo = { owner: { login: "nickyleach" }, name: "OSTSurvey", topics: [], description: null };
-  const request = async () => ({ ok: true, json: async () => ({
-    encoding: "base64", content: Buffer.from("# OSTSurvey\n\nA tool to create surveys\n\n## Basic Goals\nUsers can vote.").toString("base64"),
-  }) });
+  const repo = { owner: { login: "nickyleach" }, name: "OSTSurvey", default_branch: "main", topics: [], description: null };
+  const request = async () => ({ ok: true, text: async () => "# OSTSurvey\n\nA tool to create surveys\n\n## Basic Goals\nUsers can vote." });
   const intro = await fetchReadmeIntro(repo, request);
   assert.equal(intro, "A tool to create surveys");
   assert.equal(categoryFor(repo, intro), "Survey App");
 });
 
 test("a vague description can use README details for its project type", async () => {
-  const repo = { owner: { login: "nickyleach" }, name: "phpnimble", topics: [], description: "PHPNimble. Like PHPSpry but more nimble" };
-  const request = async () => ({ ok: true, json: async () => ({
-    encoding: "base64", content: Buffer.from("# PHPNimble\n\nPHPNimble. Like PHPSpry but more nimble.\n\nRoute all requests through the routing script in index.php.").toString("base64"),
-  }) });
+  const repo = { owner: { login: "nickyleach" }, name: "phpnimble", default_branch: "main", topics: [], description: "PHPNimble. Like PHPSpry but more nimble" };
+  const request = async () => ({ ok: true, text: async () => "# PHPNimble\n\nPHPNimble. Like PHPSpry but more nimble.\n\nRoute all requests through the routing script in index.php." });
   const details = await fetchReadmeDetails(repo, request);
   assert.equal(categoryFor(repo, repo.description, "Software Project", details.text), "Package / Framework");
 });
@@ -62,6 +59,52 @@ test("public README files classify projects without using GitHub API quota", asy
   assert.equal(requests.length, 1);
   assert.match(requests[0], /^https:\/\/raw\.githubusercontent\.com\//);
   assert.equal(categoryFor(repo, details.intro, "Software Project", details.text), "Desktop App");
+});
+
+test("a missing README never spends a GitHub API request", async () => {
+  const urls = [];
+  const repo = { owner: { login: "example" }, name: "empty", default_branch: "main" };
+  const details = await fetchReadmeDetails(repo, async (url) => { urls.push(url); return { ok: false, status: 404 }; });
+  assert.deepEqual(details, { intro: "", text: "" });
+  assert.ok(urls.length > 0);
+  assert.ok(urls.every((url) => url.startsWith("https://raw.githubusercontent.com/")));
+});
+
+test("browser repository cache avoids repeat requests and survives a rate limit", async () => {
+  const saved = new Map();
+  const storage = { getItem: (key) => saved.get(key), setItem: (key, value) => saved.set(key, value) };
+  const repos = [{ name: "one", fork: false, private: false }];
+  let calls = 0;
+  const request = async () => { calls++; return { ok: true, json: async () => repos }; };
+  const first = await fetchPublicRepos("Example", { request, storage, now: 1000 });
+  const second = await fetchPublicRepos("example", { request, storage, now: 2000 });
+  assert.equal(calls, 1);
+  assert.deepEqual(second, first);
+  const limited = await fetchPublicRepos("example", {
+    request: async () => ({ ok: false, status: 403 }), storage, now: 2 * 60 * 60 * 1000,
+  });
+  assert.deepEqual(limited.repos, repos);
+  assert.equal(limited.fetchedAt, 1000);
+});
+
+test("hosted lookup shares one repository request across repeat visitors", async () => {
+  const urls = [];
+  const repo = {
+    name: "browser-terminal", owner: { login: "sample" }, default_branch: "main",
+    description: "A terminal in your browser", language: "TypeScript", pushed_at: "2026-09-01T00:00:00Z",
+    html_url: "https://github.com/sample/browser-terminal", stargazers_count: 2,
+  };
+  const service = new PublicProfileService({ token: "", now: () => 1000, request: async (url) => {
+    urls.push(url);
+    if (url.includes("api.github.com")) return { ok: true, json: async () => [repo] };
+    return { ok: false, status: 404 };
+  } });
+  const first = await service.generateProfile({ username: "sample" });
+  const second = await service.generateProfile({ username: "sample" });
+  assert.equal(first.projects[0].category, "Browser Terminal");
+  assert.deepEqual(second, first);
+  assert.equal(urls.filter((url) => url.includes("api.github.com")).length, 1);
+  assert.ok(service.isCached("sample", 0));
 });
 
 test("project categories identify the purpose shown in repository descriptions", () => {

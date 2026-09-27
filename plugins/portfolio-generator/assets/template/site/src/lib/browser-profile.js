@@ -34,6 +34,47 @@ export function projectStatus(repo, now = Date.now()) {
   return days <= 365 ? "maintained" : "inactive";
 }
 
+const REPO_CACHE_PREFIX = "portfolio-generator:repos:v1:";
+const REPO_CACHE_FRESH_MS = 30 * 60 * 1000;
+const REPO_CACHE_STALE_MS = 7 * 24 * 60 * 60 * 1000;
+
+export async function fetchPublicRepos(username, { request = fetch, storage, now = Date.now() } = {}) {
+  if (storage === undefined) {
+    try { storage = globalThis.localStorage; } catch { storage = null; }
+  }
+  const key = REPO_CACHE_PREFIX + username.toLowerCase();
+  let cached = null;
+  try {
+    const data = JSON.parse(storage?.getItem(key) || "null");
+    if (data && Number.isFinite(data.savedAt) && Array.isArray(data.repos) && now - data.savedAt < REPO_CACHE_STALE_MS) cached = data;
+  } catch { /* Storage may be disabled or full. */ }
+  if (cached && now - cached.savedAt < REPO_CACHE_FRESH_MS) {
+    return { repos: cached.repos, fetchedAt: cached.savedAt };
+  }
+
+  try {
+    const all = [];
+    for (let page = 1; page <= 3; page++) {
+      const response = await request(`https://api.github.com/users/${encodeURIComponent(username)}/repos?type=owner&sort=pushed&per_page=100&page=${page}`);
+      if (!response.ok) {
+        const error = new Error("GitHub request failed");
+        error.status = response.status;
+        throw error;
+      }
+      const repos = await response.json();
+      all.push(...repos.filter((repo) => !repo.fork && !repo.private));
+      if (repos.length < 100) break;
+    }
+    try { storage?.setItem(key, JSON.stringify({ savedAt: now, repos: all })); } catch { /* Caching is optional. */ }
+    return { repos: all, fetchedAt: now };
+  } catch (error) {
+    if (cached && (error.status === 403 || error.status === 429 || !error.status)) {
+      return { repos: cached.repos, fetchedAt: cached.savedAt };
+    }
+    throw error;
+  }
+}
+
 export async function fetchReadmeDetails(repo, request = fetch) {
   const owner = encodeURIComponent(repo.owner.login);
   const name = encodeURIComponent(repo.name);
@@ -43,21 +84,14 @@ export async function fetchReadmeDetails(repo, request = fetch) {
   };
   if (repo.default_branch) {
     const branch = encodeURIComponent(repo.default_branch);
-    for (const filename of ["README.md", "readme.md", "README.rst", "README", "README.txt"]) {
+    for (const filename of ["README.md", "readme.md", "Readme.md", "README.MD", "README.markdown", "README.rst", "README.txt", "README"]) {
       try {
         const response = await request(`https://raw.githubusercontent.com/${owner}/${name}/${branch}/${filename}`);
         if (response.ok) return details(await response.text());
       } catch { /* Try another common README name. */ }
     }
   }
-  try {
-    const response = await request(`https://api.github.com/repos/${owner}/${name}/readme`);
-    if (!response.ok) return { intro: "", text: "" };
-    const data = await response.json();
-    if (data.encoding !== "base64" || !data.content) return { intro: "", text: "" };
-    const bytes = Uint8Array.from(atob(data.content.replace(/\s/g, "")), (c) => c.charCodeAt(0));
-    return details(new TextDecoder().decode(bytes));
-  } catch { return { intro: "", text: "" }; }
+  return { intro: "", text: "" };
 }
 
 export async function fetchReadmeIntro(repo, request = fetch) {
